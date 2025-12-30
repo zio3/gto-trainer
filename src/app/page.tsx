@@ -522,16 +522,18 @@ export default function GTOTrainer() {
 
       {/* Fixed Bottom Button Bar */}
       {situation && (
-        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 p-4">
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 p-4 safe-area-pb">
           <div className="max-w-lg mx-auto">
             {!result ? (
               // Action buttons during question phase
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-2 ${situation.options.length === 3 ? 'grid-cols-3' : 'grid-cols-2'}`}>
                 {situation.options.map((option) => (
                   <button
                     key={option}
                     onClick={() => handleAction(option)}
-                    className={`py-4 px-6 rounded-lg font-bold text-lg transition-colors ${
+                    className={`py-3 px-2 rounded-lg font-bold transition-colors ${
+                      situation.options.length === 3 ? 'text-base' : 'text-lg py-4 px-6'
+                    } ${
                       option === 'Fold'
                         ? 'bg-gray-600 hover:bg-gray-500'
                         : option === 'Raise' || option === '3-Bet'
