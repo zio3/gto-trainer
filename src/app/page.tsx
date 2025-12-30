@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import HandDisplay from '@/components/HandDisplay';
 import PokerTable from '@/components/PokerTable';
 import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel } from '@/lib/game-logic';
@@ -22,12 +22,19 @@ export default function GTOTrainer() {
   const [analysisChatInput, setAnalysisChatInput] = useState('');
   const [analysisChatHistory, setAnalysisChatHistory] = useState<ChatMessage[]>([]);
 
+  const resultRef = useRef<HTMLDivElement>(null);
+  const situationRef = useRef<HTMLDivElement>(null);
+
   const startNewHand = useCallback(() => {
     setSituation(generateSituation());
     setResult(null);
     setShowChat(false);
     setChatHistory([]);
     setAiExplanation(null);
+    // 次のハンド開始時にシチュエーション部分へスクロール
+    setTimeout(() => {
+      situationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   }, []);
 
   // AI解説を取得
@@ -173,6 +180,11 @@ export default function GTOTrainer() {
       correct: prev.correct + (isCorrect ? 1 : 0),
       total: prev.total + 1,
     }));
+
+    // 回答後に結果部分へスクロール
+    setTimeout(() => {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 50);
   };
 
   const handleChatSubmit = async (e: React.FormEvent) => {
@@ -369,7 +381,7 @@ export default function GTOTrainer() {
             />
 
             {/* Situation Display */}
-            <div className="bg-gray-800 rounded-lg p-4">
+            <div ref={situationRef} className="bg-gray-800 rounded-lg p-4">
               <div className="text-gray-400 text-sm mb-2">シチュエーション</div>
               <p className="text-lg mb-4">{situation.description}</p>
 
@@ -386,7 +398,7 @@ export default function GTOTrainer() {
 
             {/* Result */}
             {result && (
-              <div className={`rounded-lg p-4 ${
+              <div ref={resultRef} className={`rounded-lg p-4 ${
                 result.level === 'critical_mistake' ? 'bg-red-950' :
                 result.level === 'wrong' ? 'bg-red-900' :
                 result.level === 'borderline' ? 'bg-yellow-900' :
