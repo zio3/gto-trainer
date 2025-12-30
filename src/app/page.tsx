@@ -171,9 +171,10 @@ export default function GTOTrainer() {
     if (!situation) return;
 
     const correctAction = getCorrectAction(situation);
-    const isCorrect = action === correctAction;
     const explanation = getExplanation(situation, correctAction);
     const level = getAnswerLevel(situation, action, correctAction);
+    // ボーダーラインはどちらでも正解扱い
+    const isCorrect = action === correctAction || level === 'borderline';
 
     setResult({
       userAction: action,
