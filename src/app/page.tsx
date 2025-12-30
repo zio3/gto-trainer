@@ -73,7 +73,7 @@ export default function GTOTrainer() {
     }
   };
 
-  // AI分析を実行
+  // AI分析を実行（ストリーミング）
   const runAnalysis = async () => {
     if (answerHistory.length < 5) {
       alert('分析には最低5問の回答が必要です');
@@ -82,6 +82,7 @@ export default function GTOTrainer() {
 
     setIsAnalyzing(true);
     setShowAnalysis(true);
+    setAnalysis('');
 
     try {
       const response = await fetch('/api/analyze', {
@@ -93,15 +94,34 @@ export default function GTOTrainer() {
         }),
       });
 
-      const data = await response.json();
-      if (data.error) {
-        setAnalysis('分析中にエラーが発生しました: ' + data.error);
-      } else {
-        setAnalysis(data.text);
+      if (!response.ok) {
+        const errorData = await response.json();
+        setAnalysis('分析中にエラーが発生しました: ' + (errorData.error || 'Unknown error'));
+        setIsAnalyzing(false);
+        return;
       }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        setAnalysis('ストリーミングに失敗しました');
+        setIsAnalyzing(false);
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let text = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        text += decoder.decode(value, { stream: true });
+        setAnalysis(text);
+      }
+
+      setIsAnalyzing(false);
     } catch (error) {
       setAnalysis('分析中にエラーが発生しました: ' + (error instanceof Error ? error.message : 'Unknown error'));
-    } finally {
       setIsAnalyzing(false);
     }
   };
@@ -283,14 +303,9 @@ export default function GTOTrainer() {
                 </button>
               </div>
 
-              {isAnalyzing ? (
-                <div className="flex flex-col items-center py-8">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
-                  <p className="text-gray-400">分析中...</p>
-                </div>
-              ) : (
-                <div className="prose prose-invert prose-sm max-w-none">
-                  {analysis?.split('\n').map((line, i) => {
+              <div className="prose prose-invert prose-sm max-w-none">
+                {analysis ? (
+                  analysis.split('\n').map((line, i) => {
                     if (line.startsWith('## ')) {
                       return <h3 key={i} className="text-lg font-bold text-purple-400 mt-4 mb-2">{line.replace('## ', '')}</h3>;
                     }
@@ -301,9 +316,20 @@ export default function GTOTrainer() {
                       return <p key={i} className="my-2 text-gray-300">{line}</p>;
                     }
                     return null;
-                  })}
-                </div>
-              )}
+                  })
+                ) : isAnalyzing ? (
+                  <div className="flex flex-col items-center py-8">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
+                    <p className="text-gray-400">分析中...</p>
+                  </div>
+                ) : null}
+                {isAnalyzing && analysis && (
+                  <div className="flex items-center gap-2 mt-4 text-purple-400">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-400"></div>
+                    <span className="text-sm">生成中...</span>
+                  </div>
+                )}
+              </div>
 
               {/* 分析に対するチャット */}
               {!isAnalyzing && analysis && (

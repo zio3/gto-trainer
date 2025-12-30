@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 
 interface HistoryEntry {
   situation: string;
@@ -23,17 +23,16 @@ export async function POST(request: NextRequest) {
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return NextResponse.json(
-        { error: 'API key not configured' },
-        { status: 500 }
-      );
+      return new Response(JSON.stringify({ error: 'API key not configured' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     const historyText = history.map((h: HistoryEntry, i: number) =>
       `${i + 1}. ${h.situation} | ハンド: ${h.hand} | 正解: ${h.correct} | 選択: ${h.user} | ${levelLabels[h.level] || h.level}`
     ).join('\n');
 
-    // 統計情報を集計
     const criticalMistakes = history.filter((h: HistoryEntry) => h.level === 'critical_mistake').length;
     const borderlines = history.filter((h: HistoryEntry) => h.level === 'borderline').length;
 
@@ -70,6 +69,7 @@ ${historyText}
       body: JSON.stringify({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1000,
+        stream: true,
         messages: [{ role: 'user', content: prompt }],
       }),
     });
@@ -77,21 +77,67 @@ ${historyText}
     if (!response.ok) {
       const errorData = await response.text();
       console.error('Claude API error:', errorData);
-      return NextResponse.json(
-        { error: 'Failed to get response from Claude API' },
-        { status: response.status }
-      );
+      return new Response(JSON.stringify({ error: 'Failed to get response from Claude API' }), {
+        status: response.status,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const data = await response.json();
-    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || '分析を取得できませんでした';
+    // ストリーミングレスポンスを返す
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        if (!reader) {
+          controller.close();
+          return;
+        }
 
-    return NextResponse.json({ text });
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6);
+                if (data === '[DONE]') continue;
+
+                try {
+                  const parsed = JSON.parse(data);
+                  if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                    controller.enqueue(encoder.encode(parsed.delta.text));
+                  }
+                } catch {
+                  // JSON parse error, skip
+                }
+              }
+            }
+          }
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
   } catch (error) {
     console.error('Analyze API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return new Response(JSON.stringify({ error: 'Internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 }
