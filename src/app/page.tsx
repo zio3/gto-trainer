@@ -375,13 +375,15 @@ export default function GTOTrainer() {
         ) : (
           <div className="space-y-4">
             {/* Table Visualization */}
-            <PokerTable
-              heroPosition={situation.position}
-              villainPosition={situation.type === 'vsOpen' ? situation.villainPosition : null}
-            />
+            <div ref={situationRef}>
+              <PokerTable
+                heroPosition={situation.position}
+                villainPosition={situation.type === 'vsOpen' ? situation.villainPosition : null}
+              />
+            </div>
 
             {/* Situation Display */}
-            <div ref={situationRef} className="bg-gray-800 rounded-lg p-4">
+            <div className="bg-gray-800 rounded-lg p-4">
               <div className="text-gray-400 text-sm mb-2">シチュエーション</div>
               <p className="text-lg mb-4">{situation.description}</p>
 
