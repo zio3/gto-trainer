@@ -228,8 +228,8 @@ export default function GTOTrainer() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4">
-      <div className="max-w-lg mx-auto">
+    <div className="min-h-screen bg-gray-900 text-white pb-32">
+      <div className="max-w-lg mx-auto p-4">
         <h1 className="text-2xl font-bold text-center mb-2">GTO プリフロップトレーナー</h1>
         <p className="text-gray-400 text-center text-sm mb-6">6-max / 100bb</p>
 
@@ -379,25 +379,9 @@ export default function GTOTrainer() {
               </div>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons - placeholder for spacing */}
             {!result && (
-              <div className="grid grid-cols-2 gap-3">
-                {situation.options.map((option) => (
-                  <button
-                    key={option}
-                    onClick={() => handleAction(option)}
-                    className={`py-4 px-6 rounded-lg font-bold text-lg transition-colors ${
-                      option === 'Fold'
-                        ? 'bg-gray-600 hover:bg-gray-500'
-                        : option === 'Raise' || option === '3-Bet'
-                        ? 'bg-red-600 hover:bg-red-500'
-                        : 'bg-blue-600 hover:bg-blue-500'
-                    }`}
-                  >
-                    {option}
-                  </button>
-                ))}
-              </div>
+              <div className="h-20"></div>
             )}
 
             {/* Result */}
@@ -479,21 +463,6 @@ export default function GTOTrainer() {
                     <p className="text-gray-300 text-sm whitespace-pre-line">{aiExplanation}</p>
                   </div>
                 )}
-
-                <div className="mt-4 flex gap-3">
-                  <button
-                    onClick={startNewHand}
-                    className="flex-1 bg-green-600 hover:bg-green-700 py-3 rounded-lg font-bold transition-colors"
-                  >
-                    次のハンド
-                  </button>
-                  <button
-                    onClick={() => setShowChat(!showChat)}
-                    className="flex-1 bg-gray-600 hover:bg-gray-500 py-3 rounded-lg font-bold transition-colors"
-                  >
-                    {showChat ? '質問を閉じる' : '質問する'}
-                  </button>
-                </div>
               </div>
             )}
 
@@ -550,6 +519,50 @@ export default function GTOTrainer() {
           ※ 簡易版GTOレンジに基づいています。実際のGTOはスタック・相手の傾向により変動します。
         </p>
       </div>
+
+      {/* Fixed Bottom Button Bar */}
+      {situation && (
+        <div className="fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-700 p-4">
+          <div className="max-w-lg mx-auto">
+            {!result ? (
+              // Action buttons during question phase
+              <div className="grid grid-cols-2 gap-3">
+                {situation.options.map((option) => (
+                  <button
+                    key={option}
+                    onClick={() => handleAction(option)}
+                    className={`py-4 px-6 rounded-lg font-bold text-lg transition-colors ${
+                      option === 'Fold'
+                        ? 'bg-gray-600 hover:bg-gray-500'
+                        : option === 'Raise' || option === '3-Bet'
+                        ? 'bg-red-600 hover:bg-red-500'
+                        : 'bg-blue-600 hover:bg-blue-500'
+                    }`}
+                  >
+                    {option}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              // Navigation buttons after answering
+              <div className="flex gap-3">
+                <button
+                  onClick={startNewHand}
+                  className="flex-1 bg-green-600 hover:bg-green-700 py-4 rounded-lg font-bold text-lg transition-colors"
+                >
+                  次のハンド
+                </button>
+                <button
+                  onClick={() => setShowChat(!showChat)}
+                  className="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-lg font-bold text-lg transition-colors"
+                >
+                  {showChat ? '閉じる' : '質問'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
