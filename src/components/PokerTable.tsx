@@ -70,19 +70,6 @@ export default function PokerTable({ heroPosition, villainPosition }: PokerTable
         })}
       </div>
 
-      {/* 凡例 */}
-      <div className="flex justify-center gap-4 mt-2 text-xs">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 bg-blue-600 rounded"></div>
-          <span className="text-gray-400">あなた</span>
-        </div>
-        {villainPosition && (
-          <div className="flex items-center gap-1">
-            <div className="w-3 h-3 bg-red-600 rounded"></div>
-            <span className="text-gray-400">オープン</span>
-          </div>
-        )}
-      </div>
     </div>
   );
 }

@@ -13,11 +13,11 @@ export const generateSituation = (): Situation => {
 
     // ポジションに応じた説明文
     const descriptions: Record<string, string> = {
-      UTG: 'あなたはUTGです。最初のアクションです。',
-      HJ: 'あなたはHJです。UTGがフォールドしました。',
-      CO: 'あなたはCOです。UTG、HJがフォールドしました。',
-      BTN: 'あなたはBTNです。UTG〜COがフォールドしました。',
-      SB: 'あなたはSBです。全員フォールドで回ってきました。',
+      UTG: 'UTG。最初のアクション。',
+      HJ: 'HJ。UTGがフォールド。',
+      CO: 'CO。UTG、HJがフォールド。',
+      BTN: 'BTN。UTG〜COがフォールド。',
+      SB: 'SB。全員フォールドで回ってきた。',
     };
 
     return {
@@ -43,7 +43,7 @@ export const generateSituation = (): Situation => {
       rangeKey: scenario.key,
       hand: handData.notation,
       handData,
-      description: `あなたはBBです。${scenario.villain}が2.5bbにオープンしました。`,
+      description: `BB。${scenario.villain}が2.5bbオープン。`,
       options: ['3-Bet', 'Call', 'Fold'] as Action[],
     };
   }

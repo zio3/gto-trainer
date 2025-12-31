@@ -21,6 +21,7 @@ export default function GTOTrainer() {
   const [isExplaining, setIsExplaining] = useState(false);
   const [analysisChatInput, setAnalysisChatInput] = useState('');
   const [analysisChatHistory, setAnalysisChatHistory] = useState<ChatMessage[]>([]);
+  const [showHistory, setShowHistory] = useState(false);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const situationRef = useRef<HTMLDivElement>(null);
@@ -208,6 +209,20 @@ export default function GTOTrainer() {
     }, 50);
   };
 
+  const handleDeleteHistory = (index: number) => {
+    const entry = answerHistory[index];
+    if (!entry) return;
+
+    // 統計を更新
+    setStats(prev => ({
+      correct: prev.correct - (entry.isCorrect ? 1 : 0),
+      total: prev.total - 1,
+    }));
+
+    // 履歴から削除
+    setAnswerHistory(prev => prev.filter((_, i) => i !== index));
+  };
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !situation || !result) return;
@@ -275,18 +290,26 @@ export default function GTOTrainer() {
               <span className="text-sm text-gray-400 ml-2">({stats.correct}/{stats.total})</span>
             </span>
           </div>
-          {stats.total >= 5 && (
-            <button
-              onClick={runAnalysis}
-              className="w-full mt-3 bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
-            >
-              <span>📊</span> AI分析を見る
-            </button>
-          )}
-          {stats.total > 0 && stats.total < 5 && (
-            <p className="text-xs text-gray-500 mt-2 text-center">
-              あと{5 - stats.total}問でAI分析が利用可能
-            </p>
+          {stats.total > 0 && (
+            <div className="flex gap-2 mt-3">
+              <button
+                onClick={runAnalysis}
+                disabled={stats.total < 5}
+                className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1 ${
+                  stats.total >= 5
+                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                }`}
+              >
+                <span>📊</span> AI分析{stats.total < 5 && <span className="text-xs ml-1">(あと{5 - stats.total}問)</span>}
+              </button>
+              <button
+                onClick={() => setShowHistory(true)}
+                className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
+              >
+                <span>📝</span> 履歴を見る
+              </button>
+            </div>
           )}
         </div>
 
@@ -392,6 +415,81 @@ export default function GTOTrainer() {
           </div>
         )}
 
+        {/* History Modal */}
+        {showHistory && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">📝 回答履歴</h2>
+                <button
+                  onClick={() => setShowHistory(false)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {answerHistory.length === 0 ? (
+                <p className="text-gray-400 text-center py-8">履歴がありません</p>
+              ) : (
+                <div className="space-y-2">
+                  {answerHistory.map((entry, index) => (
+                    <div
+                      key={index}
+                      className={`p-3 rounded-lg flex items-center justify-between ${
+                        entry.level === 'critical_mistake' ? 'bg-red-950' :
+                        entry.level === 'wrong' ? 'bg-red-900/50' :
+                        entry.level === 'borderline' ? 'bg-yellow-900/50' :
+                        'bg-green-900/50'
+                      }`}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 text-sm">
+                          <span className="text-gray-400">{index + 1}.</span>
+                          <span className="font-mono">{entry.hand}</span>
+                          <span className="text-gray-500">|</span>
+                          <span className="text-gray-400 truncate">{entry.situation}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs mt-1">
+                          <span className={entry.isCorrect ? 'text-green-400' : 'text-red-400'}>
+                            {entry.user}
+                          </span>
+                          {entry.user !== entry.correct && (
+                            <>
+                              <span className="text-gray-500">→</span>
+                              <span className="text-green-400">{entry.correct}</span>
+                            </>
+                          )}
+                          <span className="text-gray-500 ml-auto">
+                            {entry.level === 'critical_mistake' ? '💀' :
+                             entry.level === 'wrong' ? '✗' :
+                             entry.level === 'borderline' ? '🤔' :
+                             entry.level === 'obvious' ? '👍' : '✓'}
+                          </span>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => handleDeleteHistory(index)}
+                        className="ml-3 p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded transition-colors"
+                        title="削除"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <button
+                onClick={() => setShowHistory(false)}
+                className="w-full mt-6 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg font-bold transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        )}
+
         {!situation ? (
           <button
             onClick={startNewHand}
@@ -412,7 +510,20 @@ export default function GTOTrainer() {
             {/* Situation Display */}
             <div className="bg-gray-800 rounded-lg p-4">
               <div className="text-gray-400 text-sm mb-2">シチュエーション</div>
-              <p className="text-lg mb-4">{situation.description}</p>
+              <p className="text-lg mb-4">
+                {situation.description.split(/(UTG|HJ|CO|BTN|SB|BB)/g).map((part, i) => {
+                  if (part === situation.position) {
+                    return <span key={i} className="text-blue-400 font-bold">{part}</span>;
+                  }
+                  if (situation.type === 'vsOpen' && part === situation.villainPosition) {
+                    return <span key={i} className="text-red-400 font-bold">{part}</span>;
+                  }
+                  if (['UTG', 'HJ', 'CO', 'BTN', 'SB', 'BB'].includes(part)) {
+                    return <span key={i} className="text-gray-400">{part}</span>;
+                  }
+                  return part;
+                })}
+              </p>
 
               <div className="text-gray-400 text-sm mb-2">あなたのハンド</div>
               <div className="py-4 bg-gray-700 rounded-lg flex justify-center">
@@ -476,22 +587,38 @@ export default function GTOTrainer() {
 
                 <p className="text-gray-300 whitespace-pre-line">{result.explanation}</p>
 
-                {/* AI解説セクション */}
+                {/* AI解説・質問ボタン */}
                 {!aiExplanation && !isExplaining && (
-                  <button
-                    onClick={runAiExplanation}
-                    className="w-full mt-3 bg-amber-600 hover:bg-amber-700 text-white py-2 px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2"
-                  >
-                    <span>🤖</span> AIで詳しく解説
-                  </button>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={runAiExplanation}
+                      className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span>🤖</span> AIで詳しく解説
+                    </button>
+                    <button
+                      onClick={() => setShowChat(!showChat)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span>💬</span> {showChat ? '閉じる' : '質問'}
+                    </button>
+                  </div>
                 )}
 
                 {isExplaining && (
-                  <div className="mt-3 bg-black bg-opacity-30 rounded-lg p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
-                      <span className="text-gray-400 text-sm">AI解説を生成中...</span>
+                  <div className="flex gap-2 mt-3">
+                    <div className="flex-1 bg-black bg-opacity-30 rounded-lg p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
+                        <span className="text-gray-400 text-sm">AI解説を生成中...</span>
+                      </div>
                     </div>
+                    <button
+                      onClick={() => setShowChat(!showChat)}
+                      className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span>💬</span> {showChat ? '閉じる' : '質問'}
+                    </button>
                   </div>
                 )}
 
@@ -502,6 +629,12 @@ export default function GTOTrainer() {
                       <span className="text-amber-400 text-sm font-bold">AI解説</span>
                     </div>
                     <p className="text-gray-300 text-sm whitespace-pre-line">{aiExplanation}</p>
+                    <button
+                      onClick={() => setShowChat(!showChat)}
+                      className="mt-3 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
+                    >
+                      <span>💬</span> {showChat ? '閉じる' : '質問する'}
+                    </button>
                   </div>
                 )}
               </div>
@@ -587,21 +720,13 @@ export default function GTOTrainer() {
                 ))}
               </div>
             ) : (
-              // Navigation buttons after answering
-              <div className="flex gap-3">
-                <button
-                  onClick={startNewHand}
-                  className="flex-1 bg-green-600 hover:bg-green-700 py-4 rounded-lg font-bold text-lg transition-colors"
-                >
-                  次のハンド
-                </button>
-                <button
-                  onClick={() => setShowChat(!showChat)}
-                  className="flex-1 bg-gray-600 hover:bg-gray-500 py-4 rounded-lg font-bold text-lg transition-colors"
-                >
-                  {showChat ? '閉じる' : '質問'}
-                </button>
-              </div>
+              // Navigation button after answering - only next hand
+              <button
+                onClick={startNewHand}
+                className="w-full bg-green-600 hover:bg-green-700 py-4 rounded-lg font-bold text-lg transition-colors"
+              >
+                次のハンド
+              </button>
             )}
           </div>
         </div>
