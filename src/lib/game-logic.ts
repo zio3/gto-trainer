@@ -29,11 +29,27 @@ export const generateSituation = (): Situation => {
       options: ['Raise', 'Fold'] as Action[],
     };
   } else {
-    // vs オープンシチュエーション
-    const scenarios: { villain: Position; hero: Position; key: string }[] = [
-      { villain: 'BTN', hero: 'BB', key: 'BB_vs_BTN' },
-      { villain: 'CO', hero: 'BB', key: 'BB_vs_CO' },
-      { villain: 'HJ', hero: 'BB', key: 'BB_vs_HJ' },
+    // vs オープンシチュエーション（全ポジション対応）
+    const scenarios: { villain: Position; hero: Position; key: string; description: string }[] = [
+      // BB vs
+      { villain: 'BTN', hero: 'BB', key: 'BB_vs_BTN', description: 'BB。BTNが2.5bbオープン。' },
+      { villain: 'CO', hero: 'BB', key: 'BB_vs_CO', description: 'BB。COが2.5bbオープン。' },
+      { villain: 'HJ', hero: 'BB', key: 'BB_vs_HJ', description: 'BB。HJが2.5bbオープン。' },
+      { villain: 'UTG', hero: 'BB', key: 'BB_vs_UTG', description: 'BB。UTGが2.5bbオープン。' },
+      // SB vs
+      { villain: 'BTN', hero: 'SB', key: 'SB_vs_BTN', description: 'SB。BTNが2.5bbオープン。' },
+      { villain: 'CO', hero: 'SB', key: 'SB_vs_CO', description: 'SB。COが2.5bbオープン。' },
+      { villain: 'HJ', hero: 'SB', key: 'SB_vs_HJ', description: 'SB。HJが2.5bbオープン。' },
+      { villain: 'UTG', hero: 'SB', key: 'SB_vs_UTG', description: 'SB。UTGが2.5bbオープン。' },
+      // BTN vs
+      { villain: 'CO', hero: 'BTN', key: 'BTN_vs_CO', description: 'BTN。COが2.5bbオープン。' },
+      { villain: 'HJ', hero: 'BTN', key: 'BTN_vs_HJ', description: 'BTN。HJが2.5bbオープン。' },
+      { villain: 'UTG', hero: 'BTN', key: 'BTN_vs_UTG', description: 'BTN。UTGが2.5bbオープン。' },
+      // CO vs
+      { villain: 'HJ', hero: 'CO', key: 'CO_vs_HJ', description: 'CO。HJが2.5bbオープン。' },
+      { villain: 'UTG', hero: 'CO', key: 'CO_vs_UTG', description: 'CO。UTGが2.5bbオープン。' },
+      // HJ vs
+      { villain: 'UTG', hero: 'HJ', key: 'HJ_vs_UTG', description: 'HJ。UTGが2.5bbオープン。' },
     ];
     const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
     return {
@@ -43,7 +59,7 @@ export const generateSituation = (): Situation => {
       rangeKey: scenario.key,
       hand: handData.notation,
       handData,
-      description: `BB。${scenario.villain}が2.5bbオープン。`,
+      description: scenario.description,
       options: ['3-Bet', 'Call', 'Fold'] as Action[],
     };
   }

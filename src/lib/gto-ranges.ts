@@ -33,8 +33,9 @@ export const OPEN_RANGES: Record<string, { raise: string[] }> = {
   },
 };
 
-// vs オープンのアクション
+// vs オープンのアクション（簡易版GTO）
 export const VS_OPEN_RANGES: Record<string, { threebet: string[]; call: string[] }> = {
+  // === BB vs オープン ===
   'BB_vs_BTN': {
     threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'A5s', 'A4s', 'A3s', 'KQs', 'AKo', 'AQo', '76s', '65s', '54s'],
     call: ['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'A6s', 'A2s', 'KJs', 'KTs', 'K9s', 'K8s', 'K7s', 'K6s', 'K5s', 'K4s', 'K3s', 'K2s', 'QJs', 'QTs', 'Q9s', 'Q8s', 'Q7s', 'Q6s', 'Q5s', 'JTs', 'J9s', 'J8s', 'J7s', 'T9s', 'T8s', 'T7s', '98s', '97s', '87s', '86s', '75s', '64s', '53s', '43s', 'AJo', 'ATo', 'A9o', 'A8o', 'A7o', 'A6o', 'A5o', 'A4o', 'A3o', 'A2o', 'KQo', 'KJo', 'KTo', 'K9o', 'K8o', 'K7o', 'QJo', 'QTo', 'Q9o', 'JTo', 'J9o', 'T9o', '98o'],
@@ -46,6 +47,58 @@ export const VS_OPEN_RANGES: Record<string, { threebet: string[]; call: string[]
   'BB_vs_HJ': {
     threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'A5s', 'A4s', 'AKo'],
     call: ['99', '88', '77', '66', '55', 'AJs', 'ATs', 'A9s', 'A8s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', 'AQo', 'AJo', 'KQo', 'KJo', 'QJo'],
+  },
+  'BB_vs_UTG': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'A5s', 'AKo'],
+    call: ['TT', '99', '88', '77', '66', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs', 'T9s', '98s', 'AQo', 'AJo', 'KQo'],
+  },
+
+  // === SB vs オープン（ほぼ3-bet or fold、コールは極少） ===
+  'SB_vs_BTN': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', '99', '88', 'AKs', 'AQs', 'AJs', 'ATs', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', '54s', 'AKo', 'AQo', 'AJo', 'ATo', 'KQo', 'KJo'],
+    call: ['77', '66', 'A9s', 'A8s', 'A7s', 'A6s', 'K9s', 'Q9s', 'J9s', 'T8s', '97s', '86s', '75s', '64s'],
+  },
+  'SB_vs_CO': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', '99', 'AKs', 'AQs', 'AJs', 'A5s', 'A4s', 'A3s', 'KQs', 'KJs', 'QJs', 'AKo', 'AQo', 'AJo', 'KQo'],
+    call: ['88', '77', '66', 'ATs', 'A9s', 'KTs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s'],
+  },
+  'SB_vs_HJ': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'A5s', 'A4s', 'KQs', 'AKo', 'AQo'],
+    call: ['99', '88', '77', 'ATs', 'KJs', 'QJs', 'JTs', 'T9s'],
+  },
+  'SB_vs_UTG': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'AQs', 'A5s', 'AKo'],
+    call: ['TT', '99', 'AJs', 'KQs'],
+  },
+
+  // === BTN vs オープン ===
+  'BTN_vs_CO': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', '99', 'AKs', 'AQs', 'AJs', 'ATs', 'A5s', 'A4s', 'A3s', 'A2s', 'KQs', 'KJs', 'QJs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', '54s', 'AKo', 'AQo', 'AJo', 'KQo'],
+    call: ['88', '77', '66', '55', '44', '33', '22', 'A9s', 'A8s', 'A7s', 'A6s', 'KTs', 'K9s', 'K8s', 'QTs', 'Q9s', 'J9s', 'T8s', '97s', '86s', '75s', '64s', '53s', 'ATo', 'KJo', 'KTo', 'QJo', 'QTo', 'JTo'],
+  },
+  'BTN_vs_HJ': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'AJs', 'A5s', 'A4s', 'A3s', 'KQs', 'KJs', 'QJs', 'AKo', 'AQo', 'AJo', 'KQo'],
+    call: ['99', '88', '77', '66', '55', '44', '33', '22', 'ATs', 'A9s', 'A8s', 'A7s', 'KTs', 'K9s', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', 'T8s', '98s', '97s', '87s', '86s', '76s', '65s', '54s', 'ATo', 'KJo', 'KTo', 'QJo', 'JTo'],
+  },
+  'BTN_vs_UTG': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'AQs', 'A5s', 'A4s', 'AKo', 'AQo'],
+    call: ['TT', '99', '88', '77', '66', '55', '44', '33', '22', 'AJs', 'ATs', 'A9s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', 'AJo', 'KQo', 'KJo', 'QJo'],
+  },
+
+  // === CO vs オープン ===
+  'CO_vs_HJ': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'TT', 'AKs', 'AQs', 'A5s', 'A4s', 'AKo', 'AQo'],
+    call: ['99', '88', '77', '66', 'AJs', 'ATs', 'A9s', 'KQs', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', 'AJo', 'KQo', 'KJo', 'QJo'],
+  },
+  'CO_vs_UTG': {
+    threebet: ['AA', 'KK', 'QQ', 'JJ', 'AKs', 'A5s', 'AKo'],
+    call: ['TT', '99', '88', '77', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs', 'T9s', 'AQo', 'AJo', 'KQo'],
+  },
+
+  // === HJ vs オープン ===
+  'HJ_vs_UTG': {
+    threebet: ['AA', 'KK', 'QQ', 'AKs', 'AKo'],
+    call: ['JJ', 'TT', '99', '88', '77', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs', 'AQo', 'KQo'],
   },
 };
 
@@ -59,6 +112,7 @@ export const BORDERLINE_HANDS = {
     SB: ['K4s', 'K3s', 'K2s', 'Q7s', 'Q6s', 'J7s', 'T7s', '96s', '85s', '74s', '63s', 'K7o', 'K6o', 'Q9o', 'J9o', 'T9o', '87o'],
   },
   vsOpen: {
+    // BB vs
     'BB_vs_BTN': {
       threebet: ['TT', 'AJs', 'A5s', 'A4s', 'A3s', 'KQs', '76s', '65s', '54s'],
       call: ['A2s', 'K2s', 'Q5s', 'J7s', 'T7s', '97s', '86s', '75s', '64s', '53s', 'K7o', 'Q9o', 'J9o', 'T9o', '98o'],
@@ -70,6 +124,54 @@ export const BORDERLINE_HANDS = {
     'BB_vs_HJ': {
       threebet: ['JJ', 'TT', 'AQs', 'A5s', 'A4s'],
       call: ['55', '44', 'A9s', 'A8s', 'KTs', 'K9s', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', 'AJo', 'KJo', 'QJo'],
+    },
+    'BB_vs_UTG': {
+      threebet: ['JJ', 'A5s'],
+      call: ['66', '55', 'ATs', 'KJs', 'QJs', 'T9s', '98s', 'AJo', 'KJo'],
+    },
+    // SB vs
+    'SB_vs_BTN': {
+      threebet: ['88', 'ATs', 'A3s', 'A2s', 'KTs', 'QTs', '98s', '87s', '76s', '65s', '54s', 'ATo', 'KJo'],
+      call: ['77', '66', 'A9s', 'A8s', 'A7s', 'A6s', 'K9s', 'Q9s', 'J9s'],
+    },
+    'SB_vs_CO': {
+      threebet: ['99', 'AJs', 'A5s', 'A4s', 'A3s', 'KJs', 'QJs', 'AJo'],
+      call: ['88', '77', '66', 'ATs', 'A9s', 'KTs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s'],
+    },
+    'SB_vs_HJ': {
+      threebet: ['TT', 'AJs', 'A5s', 'A4s', 'KQs'],
+      call: ['99', '88', '77', 'ATs', 'KJs', 'QJs', 'JTs', 'T9s'],
+    },
+    'SB_vs_UTG': {
+      threebet: ['JJ', 'AQs', 'A5s'],
+      call: ['TT', '99', 'AJs', 'KQs'],
+    },
+    // BTN vs
+    'BTN_vs_CO': {
+      threebet: ['99', 'ATs', 'A5s', 'A4s', 'A3s', 'A2s', 'KJs', 'QJs', 'JTs', 'T9s', '98s', '87s', '76s', '65s', '54s'],
+      call: ['88', '77', '66', 'A9s', 'A8s', 'A7s', 'A6s', 'KTs', 'K9s', 'K8s', 'QTs', 'Q9s', 'J9s', 'T8s', 'ATo', 'KJo'],
+    },
+    'BTN_vs_HJ': {
+      threebet: ['TT', 'AJs', 'A5s', 'A4s', 'A3s', 'KJs', 'QJs'],
+      call: ['99', '88', '77', 'ATs', 'A9s', 'A8s', 'A7s', 'KTs', 'K9s', 'QTs', 'Q9s', 'JTs', 'J9s', 'T9s', 'ATo', 'KJo'],
+    },
+    'BTN_vs_UTG': {
+      threebet: ['JJ', 'AQs', 'A5s', 'A4s'],
+      call: ['TT', '99', '88', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs', 'T9s', '98s', 'AJo', 'KQo'],
+    },
+    // CO vs
+    'CO_vs_HJ': {
+      threebet: ['TT', 'AQs', 'A5s', 'A4s'],
+      call: ['99', '88', '77', 'AJs', 'ATs', 'A9s', 'KJs', 'KTs', 'QJs', 'QTs', 'JTs', 'T9s', '98s', '87s', '76s', 'AJo', 'KJo'],
+    },
+    'CO_vs_UTG': {
+      threebet: ['JJ', 'AKs', 'A5s'],
+      call: ['TT', '99', '88', '77', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs', 'AQo', 'AJo', 'KQo'],
+    },
+    // HJ vs
+    'HJ_vs_UTG': {
+      threebet: ['QQ', 'AKs'],
+      call: ['JJ', 'TT', '99', '88', '77', 'AQs', 'AJs', 'ATs', 'KQs', 'KJs', 'QJs', 'JTs', 'AQo', 'KQo'],
     },
   },
 };

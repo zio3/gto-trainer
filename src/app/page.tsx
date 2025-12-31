@@ -26,7 +26,8 @@ export default function GTOTrainer() {
   const [showRangeChart, setShowRangeChart] = useState(false);
   const [selectedRangeType, setSelectedRangeType] = useState<'open' | 'vsOpen'>('open');
   const [selectedPosition, setSelectedPosition] = useState<Position>('UTG');
-  const [selectedVsPosition, setSelectedVsPosition] = useState<string>('BB_vs_BTN');
+  const [selectedOpener, setSelectedOpener] = useState<Position>('BTN');
+  const [selectedHero, setSelectedHero] = useState<Position>('BB');
 
   const resultRef = useRef<HTMLDivElement>(null);
   const situationRef = useRef<HTMLDivElement>(null);
@@ -51,7 +52,7 @@ export default function GTOTrainer() {
 
     const situationText = situation.type === 'open'
       ? `${situation.position}からのオープン判断。フォールドで回ってきた。`
-      : `BBで${situation.villainPosition}の2.5bbオープンに対する判断。`;
+      : `${situation.position}で${situation.villainPosition}の2.5bbオープンに対する判断。`;
 
     try {
       const response = await fetch('/api/explain', {
@@ -194,7 +195,7 @@ export default function GTOTrainer() {
     const historyEntry: AnswerHistoryEntry = {
       situation: situation.type === 'open'
         ? `${situation.position}オープン`
-        : `BB vs ${situation.villainPosition}`,
+        : `${situation.position} vs ${situation.villainPosition}`,
       hand: situation.hand,
       correct: correctAction,
       user: action,
@@ -245,7 +246,7 @@ export default function GTOTrainer() {
     // コンテキスト情報を構築
     const situationContext = situation.type === 'open'
       ? `${situation.position}からのオープン判断`
-      : `BB vs ${situation.villainPosition}のオープンに対する判断`;
+      : `${situation.position} vs ${situation.villainPosition}のオープンに対する判断`;
 
     try {
       const response = await fetch('/api/chat', {
@@ -545,18 +546,70 @@ export default function GTOTrainer() {
                   ))}
                 </div>
               ) : (
-                <div className="flex flex-wrap gap-1 mb-3">
-                  {['BB_vs_BTN', 'BB_vs_CO', 'BB_vs_HJ'].map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => setSelectedVsPosition(key)}
-                      className={`px-3 py-1 rounded text-sm font-bold transition-colors ${
-                        selectedVsPosition === key ? 'bg-green-600' : 'bg-gray-700'
-                      }`}
-                    >
-                      {key.replace('BB_vs_', 'vs ')}
-                    </button>
-                  ))}
+                <div className="space-y-3 mb-3">
+                  {/* Step 1: Select opener */}
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">オープン者（相手）</div>
+                    <div className="flex gap-1">
+                      {(['UTG', 'HJ', 'CO', 'BTN'] as Position[]).map((pos) => (
+                        <button
+                          key={pos}
+                          onClick={() => {
+                            setSelectedOpener(pos);
+                            // Reset hero to valid position for this opener
+                            const validHeroes = {
+                              UTG: ['HJ', 'CO', 'BTN', 'SB', 'BB'],
+                              HJ: ['CO', 'BTN', 'SB', 'BB'],
+                              CO: ['BTN', 'SB', 'BB'],
+                              BTN: ['SB', 'BB'],
+                            }[pos] || ['BB'];
+                            if (!validHeroes.includes(selectedHero)) {
+                              setSelectedHero(validHeroes[validHeroes.length - 1] as Position);
+                            }
+                          }}
+                          className={`px-3 py-2 rounded text-sm font-bold transition-colors ${
+                            selectedOpener === pos ? 'bg-red-600' : 'bg-gray-700'
+                          }`}
+                        >
+                          {pos}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Step 2: Select hero position */}
+                  <div>
+                    <div className="text-xs text-gray-400 mb-1">自分のポジション</div>
+                    <div className="flex gap-1">
+                      {(() => {
+                        const validHeroes: Record<string, Position[]> = {
+                          UTG: ['HJ', 'CO', 'BTN', 'SB', 'BB'],
+                          HJ: ['CO', 'BTN', 'SB', 'BB'],
+                          CO: ['BTN', 'SB', 'BB'],
+                          BTN: ['SB', 'BB'],
+                        };
+                        return (validHeroes[selectedOpener] || ['BB']).map((pos) => (
+                          <button
+                            key={pos}
+                            onClick={() => setSelectedHero(pos)}
+                            className={`px-3 py-2 rounded text-sm font-bold transition-colors ${
+                              selectedHero === pos ? 'bg-blue-600' : 'bg-gray-700'
+                            }`}
+                          >
+                            {pos}
+                          </button>
+                        ));
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Current selection display */}
+                  <div className="text-center text-sm bg-gray-700 rounded py-2">
+                    <span className="text-blue-400 font-bold">{selectedHero}</span>
+                    <span className="text-gray-400"> vs </span>
+                    <span className="text-red-400 font-bold">{selectedOpener}</span>
+                    <span className="text-gray-400">オープン</span>
+                  </div>
                 </div>
               )}
 
@@ -604,7 +657,8 @@ export default function GTOTrainer() {
                         textColor = 'text-white';
                       }
                     } else {
-                      const range = VS_OPEN_RANGES[selectedVsPosition];
+                      const rangeKey = `${selectedHero}_vs_${selectedOpener}`;
+                      const range = VS_OPEN_RANGES[rangeKey];
                       if (range?.threebet.includes(hand)) {
                         bgColor = 'bg-red-600';
                         textColor = 'text-white';
