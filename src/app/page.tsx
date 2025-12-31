@@ -91,12 +91,15 @@ export default function GTOTrainer() {
     setShowAnalysis(true);
     setAnalysis('');
 
+    // 直近100問に制限
+    const recentHistory = answerHistory.slice(-100);
+
     try {
       const response = await fetch('/api/analyze', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          history: answerHistory,
+          history: recentHistory,
           stats,
         }),
       });

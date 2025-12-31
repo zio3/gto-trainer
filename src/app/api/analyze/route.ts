@@ -36,16 +36,21 @@ export async function POST(request: NextRequest) {
     const criticalMistakes = history.filter((h: HistoryEntry) => h.level === 'critical_mistake').length;
     const borderlines = history.filter((h: HistoryEntry) => h.level === 'borderline').length;
 
+    const analyzedCount = history.length;
+
     const prompt = `あなたはポーカーのGTOコーチです。以下は生徒のプリフロップ練習の結果です。
 
 ${historyText}
 
 ## 統計
+- 分析対象: ${analyzedCount}問
 - 正解率: ${stats.correct}/${stats.total} (${Math.round((stats.correct / stats.total) * 100)}%)
 - 重大なミス（プレミアムハンドのフォールド等）: ${criticalMistakes}回
 - ボーダーライン（どちらでもOK）: ${borderlines}回
 
-この結果を分析して、以下の形式で日本語でフィードバックしてください：
+この結果を分析して、以下の形式で日本語でフィードバックしてください。最初に分析対象の問題数を明記してください。
+
+## 分析結果（${analyzedCount}問）
 
 ## 総評
 （全体的な傾向を2-3文で。重大なミスがあれば特に言及）
