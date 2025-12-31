@@ -4,7 +4,8 @@ import { useState, useCallback, useRef } from 'react';
 import HandDisplay from '@/components/HandDisplay';
 import PokerTable from '@/components/PokerTable';
 import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel } from '@/lib/game-logic';
-import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action } from '@/lib/types';
+import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Position } from '@/lib/types';
+import { OPEN_RANGES, VS_OPEN_RANGES, RANKS } from '@/lib/gto-ranges';
 
 export default function GTOTrainer() {
   const [situation, setSituation] = useState<Situation | null>(null);
@@ -22,6 +23,10 @@ export default function GTOTrainer() {
   const [analysisChatInput, setAnalysisChatInput] = useState('');
   const [analysisChatHistory, setAnalysisChatHistory] = useState<ChatMessage[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [showRangeChart, setShowRangeChart] = useState(false);
+  const [selectedRangeType, setSelectedRangeType] = useState<'open' | 'vsOpen'>('open');
+  const [selectedPosition, setSelectedPosition] = useState<Position>('UTG');
+  const [selectedVsPosition, setSelectedVsPosition] = useState<string>('BB_vs_BTN');
 
   const resultRef = useRef<HTMLDivElement>(null);
   const situationRef = useRef<HTMLDivElement>(null);
@@ -490,6 +495,147 @@ export default function GTOTrainer() {
           </div>
         )}
 
+        {/* Range Chart Modal */}
+        {showRangeChart && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-2 z-50">
+            <div className="bg-gray-800 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
+              <div className="flex justify-between items-center mb-3">
+                <h2 className="text-lg font-bold">📊 GTOレンジ表</h2>
+                <button
+                  onClick={() => setShowRangeChart(false)}
+                  className="text-gray-400 hover:text-white text-2xl"
+                >
+                  ×
+                </button>
+              </div>
+
+              {/* Range Type Tabs */}
+              <div className="flex gap-2 mb-3">
+                <button
+                  onClick={() => setSelectedRangeType('open')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                    selectedRangeType === 'open' ? 'bg-blue-600' : 'bg-gray-700'
+                  }`}
+                >
+                  オープン
+                </button>
+                <button
+                  onClick={() => setSelectedRangeType('vsOpen')}
+                  className={`flex-1 py-2 rounded-lg text-sm font-bold transition-colors ${
+                    selectedRangeType === 'vsOpen' ? 'bg-blue-600' : 'bg-gray-700'
+                  }`}
+                >
+                  vs オープン
+                </button>
+              </div>
+
+              {/* Position Selector */}
+              {selectedRangeType === 'open' ? (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {(['UTG', 'HJ', 'CO', 'BTN', 'SB'] as Position[]).map((pos) => (
+                    <button
+                      key={pos}
+                      onClick={() => setSelectedPosition(pos)}
+                      className={`px-3 py-1 rounded text-sm font-bold transition-colors ${
+                        selectedPosition === pos ? 'bg-green-600' : 'bg-gray-700'
+                      }`}
+                    >
+                      {pos}
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {['BB_vs_BTN', 'BB_vs_CO', 'BB_vs_HJ'].map((key) => (
+                    <button
+                      key={key}
+                      onClick={() => setSelectedVsPosition(key)}
+                      className={`px-3 py-1 rounded text-sm font-bold transition-colors ${
+                        selectedVsPosition === key ? 'bg-green-600' : 'bg-gray-700'
+                      }`}
+                    >
+                      {key.replace('BB_vs_', 'vs ')}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Legend */}
+              <div className="flex gap-3 mb-2 text-xs">
+                {selectedRangeType === 'open' ? (
+                  <div className="flex items-center gap-1">
+                    <div className="w-3 h-3 bg-green-600 rounded"></div>
+                    <span className="text-gray-400">Raise</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-red-600 rounded"></div>
+                      <span className="text-gray-400">3-Bet</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <div className="w-3 h-3 bg-blue-600 rounded"></div>
+                      <span className="text-gray-400">Call</span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {/* 13x13 Grid */}
+              <div className="grid gap-[1px] text-[9px] font-mono" style={{ gridTemplateColumns: 'repeat(13, 1fr)' }}>
+                {RANKS.map((row, i) =>
+                  RANKS.map((col, j) => {
+                    let hand: string;
+                    if (i === j) {
+                      hand = row + col; // Pair
+                    } else if (i < j) {
+                      hand = row + col + 's'; // Suited (above diagonal)
+                    } else {
+                      hand = col + row + 'o'; // Offsuit (below diagonal)
+                    }
+
+                    let bgColor = 'bg-gray-700';
+                    let textColor = 'text-gray-500';
+
+                    if (selectedRangeType === 'open') {
+                      const range = OPEN_RANGES[selectedPosition];
+                      if (range?.raise.includes(hand)) {
+                        bgColor = 'bg-green-600';
+                        textColor = 'text-white';
+                      }
+                    } else {
+                      const range = VS_OPEN_RANGES[selectedVsPosition];
+                      if (range?.threebet.includes(hand)) {
+                        bgColor = 'bg-red-600';
+                        textColor = 'text-white';
+                      } else if (range?.call.includes(hand)) {
+                        bgColor = 'bg-blue-600';
+                        textColor = 'text-white';
+                      }
+                    }
+
+                    return (
+                      <div
+                        key={`${i}-${j}`}
+                        className={`aspect-square flex items-center justify-center rounded-sm ${bgColor} ${textColor}`}
+                      >
+                        {i === j ? row + row : i < j ? row + col : col + row}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+
+              <button
+                onClick={() => setShowRangeChart(false)}
+                className="w-full mt-4 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg font-bold transition-colors"
+              >
+                閉じる
+              </button>
+            </div>
+          </div>
+        )}
+
         {!situation ? (
           <button
             onClick={startNewHand}
@@ -690,7 +836,7 @@ export default function GTOTrainer() {
         )}
 
         <p className="text-gray-500 text-xs text-center mt-8">
-          ※ 簡易版GTOレンジに基づいています。実際のGTOはスタック・相手の傾向により変動します。
+          ※ <button onClick={() => setShowRangeChart(true)} className="underline hover:text-gray-300 transition-colors">簡易版GTOレンジ</button>に基づいています。実際のGTOはスタック・相手の傾向により変動します。
         </p>
       </div>
 

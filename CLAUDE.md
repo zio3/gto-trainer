@@ -19,10 +19,10 @@ npm run lint     # Run ESLint
 
 ### Core Structure
 
-- **`src/app/page.tsx`** - Main app component (~600 lines). Manages all game state, UI state, and chat interactions using React hooks.
+- **`src/app/page.tsx`** - Main app component (~880 lines). Manages all game state, UI state, modals, and chat interactions using React hooks.
 - **`src/lib/`** - Core logic:
   - `types.ts` - All TypeScript interfaces (Position, Action, Situation, Result, etc.)
-  - `gto-ranges.ts` - GTO data (OPEN_RANGES, VS_OPEN_RANGES, hand notation conversion)
+  - `gto-ranges.ts` - GTO data (OPEN_RANGES, VS_OPEN_RANGES, RANKS, hand notation conversion)
   - `game-logic.ts` - Game mechanics (generateSituation, getCorrectAction, getAnswerLevel)
 - **`src/components/`** - UI components (Card, HandDisplay, PokerTable)
 
@@ -43,6 +43,14 @@ All routes call Claude API with `ANTHROPIC_API_KEY` from environment:
 2. **Answer levels** - 5-tier feedback system: `critical_mistake`, `wrong`, `borderline`, `correct`, `obvious`
 3. **Hand weighting** - 70% borderline hands, 30% random for optimized learning
 4. **Mobile-first** - Fixed bottom button bar, auto-scroll after actions, PWA support
+5. **Modals** - Analysis, History (with delete), Range Chart (13x13 grid) - all use fixed overlay pattern
+
+### UI Layout
+
+- Fixed bottom bar: Primary action button only ("次のハンド" after answering)
+- Secondary actions: Placed contextually (e.g., "質問" next to "AIで詳しく解説")
+- Stats area: "AI分析" and "履歴を見る" buttons side by side
+- Footer link: "簡易版GTOレンジ" opens Range Chart modal
 
 ## GTO Data Structure
 
@@ -50,6 +58,7 @@ Ranges defined in `gto-ranges.ts`:
 - `OPEN_RANGES[position]` - Opening hands per position (UTG/HJ/CO/BTN/SB)
 - `VS_OPEN_RANGES[rangeKey]` - BB defense vs opener (3bet/call/fold)
 - `BORDERLINE_HANDS` / `OBVIOUS_HANDS` - Learning emphasis categorization
+- `RANKS` - Card ranks array for 13x13 grid display
 
 ## Environment
 
