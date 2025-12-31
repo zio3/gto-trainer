@@ -557,12 +557,13 @@ export default function GTOTrainer() {
                           onClick={() => {
                             setSelectedOpener(pos);
                             // Reset hero to valid position for this opener
-                            const validHeroes = {
+                            const heroMap: Record<string, string[]> = {
                               UTG: ['HJ', 'CO', 'BTN', 'SB', 'BB'],
                               HJ: ['CO', 'BTN', 'SB', 'BB'],
                               CO: ['BTN', 'SB', 'BB'],
                               BTN: ['SB', 'BB'],
-                            }[pos] || ['BB'];
+                            };
+                            const validHeroes = heroMap[pos] || ['BB'];
                             if (!validHeroes.includes(selectedHero)) {
                               setSelectedHero(validHeroes[validHeroes.length - 1] as Position);
                             }
