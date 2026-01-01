@@ -618,7 +618,7 @@ export default function GTOTrainer() {
               )}
 
               {/* Legend */}
-              <div className="flex gap-3 mb-2 text-xs">
+              <div className="flex flex-wrap gap-x-3 gap-y-1 mb-2 text-xs">
                 {selectedRangeType === 'open' ? (
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-green-600 rounded"></div>
@@ -636,6 +636,11 @@ export default function GTOTrainer() {
                     </div>
                   </>
                 )}
+                <div className="flex items-center gap-1 text-gray-500">
+                  <span>|</span>
+                  <span>↗上: スーテッド</span>
+                  <span>↙下: オフスート</span>
+                </div>
               </div>
 
               {/* 13x13 Grid */}
@@ -672,10 +677,16 @@ export default function GTOTrainer() {
                       }
                     }
 
+                    // スーテッド/オフスートで未選択時の色を変える
+                    if (bgColor === 'bg-gray-700') {
+                      bgColor = i < j ? 'bg-gray-600' : 'bg-gray-700'; // suited = lighter
+                    }
+
                     return (
                       <div
                         key={`${i}-${j}`}
                         className={`aspect-square flex items-center justify-center rounded-sm ${bgColor} ${textColor}`}
+                        title={i === j ? 'ペア' : i < j ? 'スーテッド' : 'オフスート'}
                       >
                         {i === j ? row + row : i < j ? row + col : col + row}
                       </div>
