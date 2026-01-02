@@ -134,19 +134,26 @@ export const getAnswerLevel = (
     if (isObviouslyWeak && (userAction === 'Raise' || userAction === '3-Bet')) {
       return 'critical_mistake';
     }
-    // ボーダーラインの場合：隣接するアクションのみ許容
-    // 3-Bet vs Fold は真逆なので不正解扱い
+    // ボーダーラインの場合：頻度データの上位2アクションなら許容
     if (isBorderline) {
-      const isAdjacentAction =
-        (correctAction === '3-Bet' && userAction === 'Call') ||
-        (correctAction === 'Call' && (userAction === '3-Bet' || userAction === 'Fold')) ||
-        (correctAction === 'Fold' && userAction === 'Call') ||
-        // openの場合はRaise/Foldしかないので常に隣接
-        (correctAction === 'Raise' && userAction === 'Fold') ||
-        (correctAction === 'Fold' && userAction === 'Raise');
+      const freq = getActionFrequency(situation);
+      if (freq) {
+        const top2Actions = getTop2Actions(freq, situation.type);
+        if (top2Actions.includes(userAction)) {
+          return 'borderline';
+        }
+      } else {
+        // 頻度データがない場合は従来の隣接ロジック（フォールバック）
+        const isAdjacentAction =
+          (correctAction === '3-Bet' && userAction === 'Call') ||
+          (correctAction === 'Call' && (userAction === '3-Bet' || userAction === 'Fold')) ||
+          (correctAction === 'Fold' && userAction === 'Call') ||
+          (correctAction === 'Raise' && userAction === 'Fold') ||
+          (correctAction === 'Fold' && userAction === 'Raise');
 
-      if (isAdjacentAction) {
-        return 'borderline';
+        if (isAdjacentAction) {
+          return 'borderline';
+        }
       }
     }
     return 'wrong';
@@ -209,6 +216,24 @@ export const getActionFrequency = (situation: Situation): ActionFrequency | null
   }
 
   return null;
+};
+
+// 上位2つのアクションを取得（Action[]形式）
+export const getTop2Actions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): Action[] => {
+  const entries: { action: Action; percent: number }[] = [];
+
+  if (situationType === 'open') {
+    if (frequency.raise !== undefined) entries.push({ action: 'Raise', percent: frequency.raise });
+    if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
+  } else {
+    if (frequency.threebet !== undefined) entries.push({ action: '3-Bet', percent: frequency.threebet });
+    if (frequency.call !== undefined) entries.push({ action: 'Call', percent: frequency.call });
+    if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
+  }
+
+  // 降順でソートして上位2つを取得
+  entries.sort((a, b) => b.percent - a.percent);
+  return entries.slice(0, 2).map(e => e.action);
 };
 
 // 上位2つのアクションをフォーマット（例: "Raise 60% / Fold 40%"）
