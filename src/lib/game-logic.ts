@@ -1,5 +1,5 @@
-import { Situation, Action, Position, AnswerLevel } from './types';
-import { generateRandomHandWithSuits, OPEN_RANGES, VS_OPEN_RANGES, BORDERLINE_HANDS, OBVIOUS_HANDS } from './gto-ranges';
+import { Situation, Action, Position, AnswerLevel, ActionFrequency } from './types';
+import { generateRandomHandWithSuits, OPEN_RANGES, VS_OPEN_RANGES, BORDERLINE_HANDS, OBVIOUS_HANDS, MIXED_STRATEGY } from './gto-ranges';
 
 // シチュエーション生成（正解率に応じた難易度調整）
 export const generateSituation = (accuracy: number = 50): Situation => {
@@ -190,4 +190,43 @@ export const getExplanation = (situation: Situation, correctAction: Action): str
   }
 
   return explanation;
+};
+
+// ハンドのアクション頻度を取得
+export const getActionFrequency = (situation: Situation): ActionFrequency | null => {
+  const hand = situation.hand;
+
+  if (situation.type === 'open') {
+    const positionData = MIXED_STRATEGY.open[situation.position];
+    if (positionData && positionData[hand]) {
+      return positionData[hand];
+    }
+  } else {
+    const rangeData = MIXED_STRATEGY.vsOpen[situation.rangeKey];
+    if (rangeData && rangeData[hand]) {
+      return rangeData[hand];
+    }
+  }
+
+  return null;
+};
+
+// 上位2つのアクションをフォーマット（例: "Raise 60% / Fold 40%"）
+export const formatTopActions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): string => {
+  const entries: { action: string; percent: number }[] = [];
+
+  if (situationType === 'open') {
+    if (frequency.raise !== undefined) entries.push({ action: 'Raise', percent: frequency.raise });
+    if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
+  } else {
+    if (frequency.threebet !== undefined) entries.push({ action: '3-Bet', percent: frequency.threebet });
+    if (frequency.call !== undefined) entries.push({ action: 'Call', percent: frequency.call });
+    if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
+  }
+
+  // 降順でソートして上位2つを取得
+  entries.sort((a, b) => b.percent - a.percent);
+  const top2 = entries.slice(0, 2);
+
+  return top2.map(e => `${e.action} ${e.percent}%`).join(' / ');
 };

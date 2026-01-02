@@ -3,7 +3,7 @@
 import { useState, useCallback, useRef } from 'react';
 import HandDisplay from '@/components/HandDisplay';
 import PokerTable from '@/components/PokerTable';
-import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel } from '@/lib/game-logic';
+import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel, getActionFrequency, formatTopActions } from '@/lib/game-logic';
 import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Position, SCORE_WEIGHTS } from '@/lib/types';
 import { OPEN_RANGES, VS_OPEN_RANGES, RANKS } from '@/lib/gto-ranges';
 
@@ -788,10 +788,27 @@ export default function GTOTrainer() {
                      '正解！'}
                   </span>
                 </div>
-                {result.level === 'borderline' && (
-                  <p className="text-yellow-300 text-sm mb-2">
-                    ※ このハンドはボーダーラインです。{result.isCorrect ? '正解ですが、' : ''}状況によってはどちらの選択もありえます。
-                  </p>
+                {result.level === 'borderline' && situation && (
+                  <div className="mb-2">
+                    {(() => {
+                      const freq = getActionFrequency(situation);
+                      if (freq) {
+                        return (
+                          <p className="text-yellow-300 text-sm">
+                            <span className="font-mono bg-yellow-900/50 px-2 py-0.5 rounded mr-2">
+                              {formatTopActions(freq, situation.type)}
+                            </span>
+                            <span className="text-yellow-400/80">どちらの選択もありえます</span>
+                          </p>
+                        );
+                      }
+                      return (
+                        <p className="text-yellow-300 text-sm">
+                          ※ このハンドはボーダーラインです。{result.isCorrect ? '正解ですが、' : ''}状況によってはどちらの選択もありえます。
+                        </p>
+                      );
+                    })()}
+                  </div>
                 )}
 
                 {/* 選択と正解を常に表示 */}

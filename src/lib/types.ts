@@ -92,3 +92,13 @@ export interface ChatMessage {
   content: string;
   isLoading?: boolean;
 }
+
+// ミックス戦略の頻度データ
+export interface ActionFrequency {
+  raise?: number;    // オープン用
+  threebet?: number; // vsOpen用
+  call?: number;
+  fold?: number;
+}
+
+export type MixedStrategyData = Record<string, ActionFrequency>;
