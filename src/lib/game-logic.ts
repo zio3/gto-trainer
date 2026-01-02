@@ -134,9 +134,20 @@ export const getAnswerLevel = (
     if (isObviouslyWeak && (userAction === 'Raise' || userAction === '3-Bet')) {
       return 'critical_mistake';
     }
-    // ボーダーラインなら許容
+    // ボーダーラインの場合：隣接するアクションのみ許容
+    // 3-Bet vs Fold は真逆なので不正解扱い
     if (isBorderline) {
-      return 'borderline';
+      const isAdjacentAction =
+        (correctAction === '3-Bet' && userAction === 'Call') ||
+        (correctAction === 'Call' && (userAction === '3-Bet' || userAction === 'Fold')) ||
+        (correctAction === 'Fold' && userAction === 'Call') ||
+        // openの場合はRaise/Foldしかないので常に隣接
+        (correctAction === 'Raise' && userAction === 'Fold') ||
+        (correctAction === 'Fold' && userAction === 'Raise');
+
+      if (isAdjacentAction) {
+        return 'borderline';
+      }
     }
     return 'wrong';
   }
