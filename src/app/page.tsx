@@ -4,13 +4,13 @@ import { useState, useCallback, useRef } from 'react';
 import HandDisplay from '@/components/HandDisplay';
 import PokerTable from '@/components/PokerTable';
 import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel } from '@/lib/game-logic';
-import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Position } from '@/lib/types';
+import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Position, SCORE_WEIGHTS } from '@/lib/types';
 import { OPEN_RANGES, VS_OPEN_RANGES, RANKS } from '@/lib/gto-ranges';
 
 export default function GTOTrainer() {
   const [situation, setSituation] = useState<Situation | null>(null);
   const [result, setResult] = useState<Result | null>(null);
-  const [stats, setStats] = useState<Stats>({ correct: 0, total: 0 });
+  const [stats, setStats] = useState<Stats>({ correct: 0, total: 0, weightedScore: 0, maxPossibleScore: 0 });
   const [showChat, setShowChat] = useState(false);
   const [chatInput, setChatInput] = useState('');
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([]);
@@ -194,6 +194,10 @@ export default function GTOTrainer() {
       level,
     });
 
+    // スコア計算
+    const weights = SCORE_WEIGHTS[level];
+    const score = isCorrect ? weights.correct : weights.wrong;
+
     // 履歴に追加
     const historyEntry: AnswerHistoryEntry = {
       situation: situation.type === 'open'
@@ -204,12 +208,15 @@ export default function GTOTrainer() {
       user: action,
       isCorrect,
       level,
+      score,
     };
     setAnswerHistory(prev => [...prev, historyEntry]);
 
     setStats(prev => ({
       correct: prev.correct + (isCorrect ? 1 : 0),
       total: prev.total + 1,
+      weightedScore: prev.weightedScore + score,
+      maxPossibleScore: prev.maxPossibleScore + weights.maxPossible,
     }));
 
     // 回答後に結果部分へスクロール
@@ -223,9 +230,12 @@ export default function GTOTrainer() {
     if (!entry) return;
 
     // 統計を更新
+    const weights = SCORE_WEIGHTS[entry.level];
     setStats(prev => ({
       correct: prev.correct - (entry.isCorrect ? 1 : 0),
       total: prev.total - 1,
+      weightedScore: prev.weightedScore - entry.score,
+      maxPossibleScore: prev.maxPossibleScore - weights.maxPossible,
     }));
 
     // 履歴から削除

@@ -7,6 +7,7 @@ interface HistoryEntry {
   user: string;
   isCorrect: boolean;
   level: 'critical_mistake' | 'wrong' | 'borderline' | 'correct' | 'obvious';
+  score: number;
 }
 
 const levelLabels: Record<string, string> = {
@@ -15,6 +16,14 @@ const levelLabels: Record<string, string> = {
   borderline: '🤔ボーダー',
   correct: '○正解',
   obvious: '👍完璧',
+};
+
+const scoreWeights: Record<string, number> = {
+  obvious: 0.5,
+  correct: 1.0,
+  borderline: 1.0,
+  wrong: 1.0,
+  critical_mistake: 1.0,
 };
 
 export async function POST(request: NextRequest) {
@@ -30,11 +39,18 @@ export async function POST(request: NextRequest) {
     }
 
     const historyText = history.map((h: HistoryEntry, i: number) =>
-      `${i + 1}. ${h.situation} | ハンド: ${h.hand} | 正解: ${h.correct} | 選択: ${h.user} | ${levelLabels[h.level] || h.level}`
+      `${i + 1}. ${h.situation} | ハンド: ${h.hand} | 正解: ${h.correct} | 選択: ${h.user} | ${levelLabels[h.level] || h.level} | スコア: ${h.score ?? 0}`
     ).join('\n');
 
     const criticalMistakes = history.filter((h: HistoryEntry) => h.level === 'critical_mistake').length;
     const borderlines = history.filter((h: HistoryEntry) => h.level === 'borderline').length;
+    const obviousCorrects = history.filter((h: HistoryEntry) => h.level === 'obvious').length;
+    const normalCorrects = history.filter((h: HistoryEntry) => h.level === 'correct').length;
+
+    // 重み付きスコア計算
+    const totalScore = history.reduce((sum: number, h: HistoryEntry) => sum + (h.score ?? 0), 0);
+    const maxScore = history.reduce((sum: number, h: HistoryEntry) => sum + scoreWeights[h.level], 0);
+    const weightedPercentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     const analyzedCount = history.length;
 
@@ -45,18 +61,29 @@ ${historyText}
 ## 統計
 - 分析対象: ${analyzedCount}問
 - 正解率: ${stats.correct}/${stats.total} (${Math.round((stats.correct / stats.total) * 100)}%)
-- 重大なミス（プレミアムハンドのフォールド等）: ${criticalMistakes}回
-- ボーダーライン（どちらでもOK）: ${borderlines}回
+- 重み付きスコア: ${totalScore.toFixed(1)}/${maxScore.toFixed(1)} (${weightedPercentage}%)
+- 簡単な問題の正解: ${obviousCorrects}回（スコア×0.5）
+- 通常の正解: ${normalCorrects}回（スコア×1.0）
+- ボーダーライン: ${borderlines}回（どちらでもスコア×1.0）
+- 重大なミス: ${criticalMistakes}回（スコア-0.5のペナルティ）
 
-この結果を分析して、以下の形式で日本語でフィードバックしてください。最初に分析対象の問題数を明記してください。
+## スコアの考え方
+- 簡単な問題（AAレイズ等）の正解は価値が低い（0.5点）
+- ボーダーラインの判断は難しいので両方正解（1点）
+- 通常の正解は1点
+- 重大なミスは-0.5点のペナルティ
+- 重み付きスコアが高いほど「難しい問題も正解できている」ことを意味する
+
+この結果を分析して、以下の形式で日本語でフィードバックしてください。
+単純な正解率だけでなく、重み付きスコアも考慮して評価してください。
 
 ## 分析結果（${analyzedCount}問）
 
 ## 総評
-（全体的な傾向を2-3文で。重大なミスがあれば特に言及）
+（全体的な傾向を2-3文で。正解率と重み付きスコアの差があれば言及。重大なミスがあれば特に言及）
 
 ## 良かった点
-（できていることを箇条書きで）
+（できていることを箇条書きで。難しい問題を正解していれば特に評価）
 
 ## 改善ポイント
 （間違いの傾向から具体的なアドバイスを箇条書きで。重大なミスは特に強調）

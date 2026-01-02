@@ -64,7 +64,18 @@ export interface Result {
 export interface Stats {
   correct: number;
   total: number;
+  weightedScore: number;
+  maxPossibleScore: number;
 }
+
+// 回答レベルごとのスコア重み
+export const SCORE_WEIGHTS: Record<AnswerLevel, { correct: number; wrong: number; maxPossible: number }> = {
+  obvious: { correct: 0.5, wrong: 0, maxPossible: 0.5 },        // 簡単な問題
+  correct: { correct: 1.0, wrong: 0, maxPossible: 1.0 },        // 通常の問題
+  borderline: { correct: 1.0, wrong: 1.0, maxPossible: 1.0 },   // どちらも正解
+  wrong: { correct: 0, wrong: 0, maxPossible: 1.0 },            // 不正解
+  critical_mistake: { correct: 0, wrong: -0.5, maxPossible: 1.0 }, // 重大ミスはペナルティ
+};
 
 export interface AnswerHistoryEntry {
   situation: string;
@@ -73,6 +84,7 @@ export interface AnswerHistoryEntry {
   user: Action;
   isCorrect: boolean;
   level: AnswerLevel;
+  score: number;
 }
 
 export interface ChatMessage {
