@@ -226,10 +226,25 @@ export const notationToHandData = (notation: string): HandData => {
   };
 };
 
-// ハンド生成（ボーダーライン重視版）
-export const generateRandomHandWithSuits = (): HandData => {
-  // 70%の確率でボーダーラインハンドから選ぶ
-  if (Math.random() < 0.7) {
+// 正解率に応じたボーダーラインハンドの出現率を計算
+const getBorderlineRate = (accuracy: number): number => {
+  // 正解率が低い時は簡単な問題も出す、高い時はボーダー中心
+  // 0% → 30%, 50% → 50%, 70% → 70%, 90%+ → 85%
+  if (accuracy < 50) {
+    return 0.3 + (accuracy / 50) * 0.2; // 30% ~ 50%
+  } else if (accuracy < 70) {
+    return 0.5 + ((accuracy - 50) / 20) * 0.2; // 50% ~ 70%
+  } else {
+    return Math.min(0.85, 0.7 + ((accuracy - 70) / 30) * 0.15); // 70% ~ 85%
+  }
+};
+
+// ハンド生成（正解率に応じた難易度調整版）
+export const generateRandomHandWithSuits = (accuracy: number = 50): HandData => {
+  const borderlineRate = getBorderlineRate(accuracy);
+
+  // 正解率に応じた確率でボーダーラインハンドから選ぶ
+  if (Math.random() < borderlineRate) {
     const allBorderlineHands = [
       ...new Set([
         ...Object.values(BORDERLINE_HANDS.open).flat(),
@@ -241,7 +256,7 @@ export const generateRandomHandWithSuits = (): HandData => {
     return notationToHandData(notation);
   }
 
-  // 30%は通常のランダム生成
+  // 残りは通常のランダム生成
   let notation: string;
   let attempts = 0;
   do {

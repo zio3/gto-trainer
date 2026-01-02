@@ -33,7 +33,9 @@ export default function GTOTrainer() {
   const situationRef = useRef<HTMLDivElement>(null);
 
   const startNewHand = useCallback(() => {
-    setSituation(generateSituation());
+    // 正解率を計算して難易度調整
+    const accuracy = stats.total > 0 ? (stats.correct / stats.total) * 100 : 50;
+    setSituation(generateSituation(accuracy));
     setResult(null);
     setShowChat(false);
     setChatHistory([]);
@@ -42,7 +44,7 @@ export default function GTOTrainer() {
     setTimeout(() => {
       situationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
-  }, []);
+  }, [stats.correct, stats.total]);
 
   // AI解説を取得
   const runAiExplanation = async () => {

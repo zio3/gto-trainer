@@ -1,10 +1,10 @@
 import { Situation, Action, Position, AnswerLevel } from './types';
 import { generateRandomHandWithSuits, OPEN_RANGES, VS_OPEN_RANGES, BORDERLINE_HANDS, OBVIOUS_HANDS } from './gto-ranges';
 
-// シチュエーション生成
-export const generateSituation = (): Situation => {
+// シチュエーション生成（正解率に応じた難易度調整）
+export const generateSituation = (accuracy: number = 50): Situation => {
   const rand = Math.random();
-  const handData = generateRandomHandWithSuits();
+  const handData = generateRandomHandWithSuits(accuracy);
 
   if (rand < 0.6) {
     // オープンシチュエーション
