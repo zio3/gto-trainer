@@ -788,27 +788,10 @@ export default function GTOTrainer() {
                      '正解！'}
                   </span>
                 </div>
-                {result.level === 'borderline' && situation && (
-                  <div className="mb-2">
-                    {(() => {
-                      const freq = getActionFrequency(situation);
-                      if (freq) {
-                        return (
-                          <p className="text-yellow-300 text-sm">
-                            <span className="font-mono bg-yellow-900/50 px-2 py-0.5 rounded mr-2">
-                              {formatTopActions(freq, situation.type)}
-                            </span>
-                            <span className="text-yellow-400/80">どちらの選択もありえます</span>
-                          </p>
-                        );
-                      }
-                      return (
-                        <p className="text-yellow-300 text-sm">
-                          ※ このハンドはボーダーラインです。{result.isCorrect ? '正解ですが、' : ''}状況によってはどちらの選択もありえます。
-                        </p>
-                      );
-                    })()}
-                  </div>
+                {result.level === 'borderline' && (
+                  <p className="text-yellow-300 text-sm mb-2">
+                    ※ どちらの選択もありえます
+                  </p>
                 )}
 
                 {/* 選択と正解を常に表示 */}
@@ -823,9 +806,27 @@ export default function GTOTrainer() {
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-400">正解:</span>
-                    <span className="font-bold px-3 py-1 rounded bg-green-700">
-                      {result.correctAction}
-                    </span>
+                    {result.level === 'borderline' && situation ? (
+                      (() => {
+                        const freq = getActionFrequency(situation);
+                        if (freq) {
+                          return (
+                            <span className="font-bold px-3 py-1 rounded bg-yellow-700 font-mono">
+                              {formatTopActions(freq, situation.type)}
+                            </span>
+                          );
+                        }
+                        return (
+                          <span className="font-bold px-3 py-1 rounded bg-green-700">
+                            {result.correctAction}
+                          </span>
+                        );
+                      })()
+                    ) : (
+                      <span className="font-bold px-3 py-1 rounded bg-green-700">
+                        {result.correctAction}
+                      </span>
+                    )}
                   </div>
                 </div>
 
