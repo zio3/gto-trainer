@@ -258,6 +258,14 @@ export default function GTOTrainer() {
     setAnswerHistory(prev => prev.filter((_, i) => i !== index));
   };
 
+  const handleClearAllHistory = () => {
+    if (!confirm('すべての履歴をクリアしますか？')) return;
+    setAnswerHistory([]);
+    setStats({ correct: 0, total: 0, weightedScore: 0, maxPossibleScore: 0 });
+    setAnalysis(null);
+    setAnalysisChatHistory([]);
+  };
+
   const handleChatSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!chatInput.trim() || !situation || !result) return;
@@ -474,6 +482,15 @@ export default function GTOTrainer() {
                 <p className="text-gray-400 text-center py-8">履歴がありません</p>
               ) : (
                 <div className="space-y-2">
+                  {/* 全クリアボタン */}
+                  <div className="flex justify-end mb-2">
+                    <button
+                      onClick={handleClearAllHistory}
+                      className="text-xs text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      🗑️ 全クリア
+                    </button>
+                  </div>
                   {answerHistory.map((entry, index) => (
                     <div
                       key={index}
