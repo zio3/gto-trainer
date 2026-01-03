@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import HandDisplay from '@/components/HandDisplay';
 import PokerTable from '@/components/PokerTable';
 import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel, getActionFrequency, formatTopActions } from '@/lib/game-logic';
@@ -28,9 +28,23 @@ export default function GTOTrainer() {
   const [selectedPosition, setSelectedPosition] = useState<Position>('UTG');
   const [selectedOpener, setSelectedOpener] = useState<Position>('BTN');
   const [selectedHero, setSelectedHero] = useState<Position>('BB');
+  const [isOnline, setIsOnline] = useState(true);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const situationRef = useRef<HTMLDivElement>(null);
+
+  // オンライン/オフライン状態を監視
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   const startNewHand = useCallback(() => {
     // 正解率を計算して難易度調整
@@ -313,17 +327,23 @@ export default function GTOTrainer() {
           </div>
           {stats.total > 0 && (
             <div className="flex gap-2 mt-3">
-              <button
-                onClick={runAnalysis}
-                disabled={stats.total < 5}
-                className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1 ${
-                  stats.total >= 5
-                    ? 'bg-purple-600 hover:bg-purple-700 text-white'
-                    : 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                }`}
-              >
-                <span>📊</span> AI分析{stats.total < 5 && <span className="text-xs ml-1">(あと{5 - stats.total}問)</span>}
-              </button>
+              {isOnline ? (
+                <button
+                  onClick={runAnalysis}
+                  disabled={stats.total < 5}
+                  className={`flex-1 py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1 ${
+                    stats.total >= 5
+                      ? 'bg-purple-600 hover:bg-purple-700 text-white'
+                      : 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  }`}
+                >
+                  <span>📊</span> AI分析{stats.total < 5 && <span className="text-xs ml-1">(あと{5 - stats.total}問)</span>}
+                </button>
+              ) : (
+                <div className="flex-1 bg-gray-700 text-gray-500 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-1">
+                  <span>📴</span> オフライン
+                </div>
+              )}
               <button
                 onClick={() => setShowHistory(true)}
                 className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
@@ -832,8 +852,8 @@ export default function GTOTrainer() {
 
                 <p className="text-gray-300 whitespace-pre-line">{result.explanation}</p>
 
-                {/* AI解説・質問ボタン */}
-                {!aiExplanation && !isExplaining && (
+                {/* AI解説・質問ボタン（オンライン時のみ） */}
+                {isOnline && !aiExplanation && !isExplaining && (
                   <div className="flex gap-2 mt-3">
                     <button
                       onClick={runAiExplanation}
@@ -850,7 +870,7 @@ export default function GTOTrainer() {
                   </div>
                 )}
 
-                {isExplaining && (
+                {isOnline && isExplaining && (
                   <div className="flex gap-2 mt-3">
                     <div className="flex-1 bg-black bg-opacity-30 rounded-lg p-3">
                       <div className="flex items-center gap-2">
@@ -867,7 +887,7 @@ export default function GTOTrainer() {
                   </div>
                 )}
 
-                {aiExplanation && (
+                {isOnline && aiExplanation && (
                   <div className="mt-3 bg-black bg-opacity-30 rounded-lg p-3">
                     <div className="flex items-center gap-1 mb-2">
                       <span>🤖</span>
@@ -885,8 +905,8 @@ export default function GTOTrainer() {
               </div>
             )}
 
-            {/* Chat Section */}
-            {showChat && (
+            {/* Chat Section（オンライン時のみ） */}
+            {isOnline && showChat && (
               <div className="bg-gray-800 rounded-lg p-4">
                 <div className="text-gray-400 text-sm mb-3">質問・疑問点</div>
 
