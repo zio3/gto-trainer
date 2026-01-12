@@ -333,7 +333,7 @@ export default function GTOTrainer() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white pb-32">
+    <main className="min-h-screen bg-gray-900 text-white pb-32">
       <div className="max-w-lg mx-auto p-4">
         <h1 className="text-2xl font-bold text-center mb-2">{t('app.title')}</h1>
         <p className="text-gray-400 text-center text-sm mb-6">{t('app.subtitle')}</p>
@@ -699,7 +699,7 @@ export default function GTOTrainer() {
                     </div>
                   </>
                 )}
-                <div className="flex items-center gap-1 text-gray-500">
+                <div className="flex items-center gap-1 text-gray-400">
                   <span>|</span>
                   <span>{t('rangeChart.legend.suited')}</span>
                   <span>{t('rangeChart.legend.offsuit')}</span>
@@ -985,7 +985,7 @@ export default function GTOTrainer() {
           </div>
         )}
 
-        <p className="text-gray-500 text-xs text-center mt-8">
+        <p className="text-gray-400 text-xs text-center mt-8">
           {locale === 'ja' ? '※ ' : '* '}<button onClick={() => setShowRangeChart(true)} className="underline hover:text-gray-300 transition-colors">{t('footer.rangeLink')}</button>{locale === 'ja' ? 'に基づいています。実際のGTOはスタック・相手の傾向により変動します。' : '. Actual GTO varies by stack size and opponent tendencies.'}
         </p>
       </div>
@@ -1027,6 +1027,6 @@ export default function GTOTrainer() {
           </div>
         </div>
       )}
-    </div>
+    </main>
   );
 }
