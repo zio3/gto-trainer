@@ -11,7 +11,7 @@ interface HistoryEntry {
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, analysis, history, stats } = await request.json();
+    const { message, analysis, history, stats, locale = 'ja' } = await request.json();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -26,7 +26,8 @@ export async function POST(request: NextRequest) {
       `${i + 1}. ${h.situation} | ${h.hand} | ${h.isCorrect ? '○' : '×'}`
     ).join('\n');
 
-    const prompt = `あなたはポーカーのGTOコーチです。
+    const prompt = locale === 'ja'
+      ? `あなたはポーカーのGTOコーチです。
 
 ## 先ほどの分析レポート
 ${analysis}
@@ -42,7 +43,24 @@ ${message}
 
 上記の分析レポートを踏まえて、ユーザーの質問に答えてください。
 具体的で実践的なアドバイスを心がけてください。
-回答は日本語で、200-300文字程度を目安にしてください。`;
+回答は日本語で、200-300文字程度を目安にしてください。`
+      : `You are a GTO poker coach.
+
+## Previous Analysis Report
+${analysis}
+
+## Recent Answer History
+${historySummary}
+
+## Statistics
+Accuracy: ${stats.correct}/${stats.total}
+
+## User's Question
+${message}
+
+Answer the user's question based on the analysis report above.
+Focus on specific, practical advice.
+Keep your response around 100-200 words in English.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -68,7 +86,8 @@ ${message}
     }
 
     const data = await response.json();
-    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || '回答を取得できませんでした';
+    const fallbackText = locale === 'ja' ? '回答を取得できませんでした' : 'Could not get response';
+    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || fallbackText;
 
     return NextResponse.json({ text });
   } catch (error) {

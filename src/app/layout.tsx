@@ -13,14 +13,18 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "GTO プリフロップトレーナー",
-  description: "ポーカーのGTOプリフロップを練習するためのトレーニングアプリ",
+  title: "GTO プリフロップトレーナー | 無料・登録不要でポーカーのレンジを練習",
+  description: "アカウント登録不要・完全無料のGTOプリフロップトレーナー。6-max/100bbのオープンレンジ・コールレンジをクイズ形式で練習できます。日本語対応。",
   manifest: "/manifest.json",
+  verification: {
+    google: "8IHhYr805pB9ixIfuvidalt8TfwEq41hTvGGKBULgMQ",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "GTO Trainer",
   },
+  keywords: ["GTO", "ポーカー", "プリフロップ", "練習", "トレーナー", "無料", "レンジ", "6-max"],
 };
 
 export const viewport: Viewport = {

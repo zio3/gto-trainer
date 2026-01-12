@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, context } = await request.json();
+    const { message, context, locale = 'ja' } = await request.json();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -12,11 +12,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const aiExplanationSection = context.aiExplanation
-      ? `\n## 先ほどのAI解説\n${context.aiExplanation}\n`
-      : '';
-
-    const prompt = `あなたはポーカーのGTOコーチです。初心者にわかりやすく教えてください。
+    const prompt = locale === 'ja'
+      ? `あなたはポーカーのGTOコーチです。初心者にわかりやすく教えてください。
 
 ## 現在のシチュエーション
 - 状況: ${context.situationContext}
@@ -24,12 +21,26 @@ export async function POST(request: NextRequest) {
 - 正解アクション: ${context.correctAction}
 - ユーザーの選択: ${context.userAction}
 - 結果: ${context.isCorrect ? '正解' : '不正解'}
-${aiExplanationSection}
+${context.aiExplanation ? `\n## 先ほどのAI解説\n${context.aiExplanation}\n` : ''}
 ## ユーザーの質問
 ${message}
 
 ${context.aiExplanation ? '上記のAI解説を踏まえて、' : ''}簡潔に、でも初心者にもわかるように説明してください。必要に応じて具体例を使ってください。
-回答は日本語で、200文字程度を目安にしてください。`;
+回答は日本語で、200文字程度を目安にしてください。`
+      : `You are a GTO poker coach. Explain in a beginner-friendly way.
+
+## Current Situation
+- Situation: ${context.situationContext}
+- Hand: ${context.hand}
+- Correct action: ${context.correctAction}
+- User's choice: ${context.userAction}
+- Result: ${context.isCorrect ? 'Correct' : 'Incorrect'}
+${context.aiExplanation ? `\n## Previous AI Explanation\n${context.aiExplanation}\n` : ''}
+## User's Question
+${message}
+
+${context.aiExplanation ? 'Based on the AI explanation above, ' : ''}explain concisely but in a way beginners can understand. Use examples when helpful.
+Keep your response around 100-150 words in English.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -55,7 +66,8 @@ ${context.aiExplanation ? '上記のAI解説を踏まえて、' : ''}簡潔に�
     }
 
     const data = await response.json();
-    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || '回答を取得できませんでした';
+    const fallbackText = locale === 'ja' ? '回答を取得できませんでした' : 'Could not get response';
+    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || fallbackText;
 
     return NextResponse.json({ text });
   } catch (error) {

@@ -1,0 +1,91 @@
+{
+  "app": {
+    "title": "GTO Preflop Trainer",
+    "subtitle": "6-max / 100bb"
+  },
+  "stats": {
+    "accuracy": "Accuracy",
+    "aiAnalysis": "AI Analysis",
+    "aiAnalysisRemaining": "{count} more",
+    "offline": "Offline",
+    "viewHistory": "View History"
+  },
+  "game": {
+    "startTraining": "Start Training",
+    "situation": "Situation",
+    "yourHand": "Your Hand",
+    "nextHand": "Next Hand",
+    "suited": "suited",
+    "offsuit": "offsuit"
+  },
+  "actions": {
+    "raise": "Raise",
+    "fold": "Fold",
+    "call": "Call",
+    "threeBet": "3-Bet"
+  },
+  "result": {
+    "correct": "Correct!",
+    "wrong": "Incorrect",
+    "borderline": "Borderline",
+    "obvious": "Perfect!",
+    "criticalMistake": "Remember this!",
+    "borderlineNote": "* Both choices are acceptable",
+    "yourChoice": "Your choice:",
+    "correctAnswer": "Correct answer:"
+  },
+  "ai": {
+    "explainWithAi": "AI Explanation",
+    "generating": "Generating AI explanation...",
+    "aiExplanation": "AI Explanation",
+    "askQuestion": "Ask a question",
+    "question": "Question",
+    "close": "Close",
+    "questionPlaceholder": "Why this hand...?",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "questionSection": "Questions"
+  },
+  "analysis": {
+    "title": "AI Analysis Report",
+    "analyzing": "Analyzing...",
+    "generating": "Generating...",
+    "askAboutAnalysis": "Ask about analysis",
+    "placeholder": "Tell me more about this analysis...",
+    "minimumRequired": "At least 5 answers required for analysis"
+  },
+  "history": {
+    "title": "Answer History",
+    "empty": "No history yet",
+    "clearAll": "Clear All",
+    "clearConfirm": "Clear all history?",
+    "delete": "Delete"
+  },
+  "rangeChart": {
+    "title": "GTO Range Chart",
+    "open": "Open",
+    "vsOpen": "vs Open",
+    "opener": "Opener (opponent)",
+    "yourPosition": "Your position",
+    "legend": {
+      "raise": "Raise",
+      "threeBet": "3-Bet",
+      "call": "Call",
+      "suited": "↗ Above: Suited",
+      "offsuit": "↙ Below: Offsuit"
+    }
+  },
+  "footer": {
+    "disclaimer": "* Based on {link}. Actual GTO varies by stack size and opponent tendencies.",
+    "rangeLink": "Simplified GTO Ranges"
+  },
+  "common": {
+    "close": "Close",
+    "error": "An error occurred"
+  },
+  "situations": {
+    "openAction": "{position}. First to act.",
+    "foldedTo": "{position}. {folded} folded.",
+    "vsOpen": "{position}. {villain} opened 2.5bb."
+  }
+}

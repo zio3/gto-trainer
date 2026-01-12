@@ -10,12 +10,20 @@ interface HistoryEntry {
   score: number;
 }
 
-const levelLabels: Record<string, string> = {
+const levelLabelsJa: Record<string, string> = {
   critical_mistake: '💀重大ミス',
   wrong: '×不正解',
   borderline: '🤔ボーダー',
   correct: '○正解',
   obvious: '👍完璧',
+};
+
+const levelLabelsEn: Record<string, string> = {
+  critical_mistake: '💀Critical',
+  wrong: '×Wrong',
+  borderline: '🤔Borderline',
+  correct: '○Correct',
+  obvious: '👍Perfect',
 };
 
 const scoreWeights: Record<string, number> = {
@@ -28,7 +36,8 @@ const scoreWeights: Record<string, number> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { history, stats } = await request.json();
+    const { history, stats, locale = 'ja' } = await request.json();
+    const levelLabels = locale === 'ja' ? levelLabelsJa : levelLabelsEn;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -38,9 +47,12 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const historyText = history.map((h: HistoryEntry, i: number) =>
-      `${i + 1}. ${h.situation} | ハンド: ${h.hand} | 正解: ${h.correct} | 選択: ${h.user} | ${levelLabels[h.level] || h.level} | スコア: ${h.score ?? 0}`
-    ).join('\n');
+    const historyText = history.map((h: HistoryEntry, i: number) => {
+      if (locale === 'ja') {
+        return `${i + 1}. ${h.situation} | ハンド: ${h.hand} | 正解: ${h.correct} | 選択: ${h.user} | ${levelLabels[h.level] || h.level} | スコア: ${h.score ?? 0}`;
+      }
+      return `${i + 1}. ${h.situation} | Hand: ${h.hand} | Correct: ${h.correct} | Choice: ${h.user} | ${levelLabels[h.level] || h.level} | Score: ${h.score ?? 0}`;
+    }).join('\n');
 
     const criticalMistakes = history.filter((h: HistoryEntry) => h.level === 'critical_mistake').length;
     const borderlines = history.filter((h: HistoryEntry) => h.level === 'borderline').length;
@@ -54,7 +66,8 @@ export async function POST(request: NextRequest) {
 
     const analyzedCount = history.length;
 
-    const prompt = `あなたはポーカーのGTOコーチです。以下は生徒のプリフロップ練習の結果です。
+    const prompt = locale === 'ja'
+      ? `あなたはポーカーのGTOコーチです。以下は生徒のプリフロップ練習の結果です。
 
 ${historyText}
 
@@ -89,7 +102,43 @@ ${historyText}
 （間違いの傾向から具体的なアドバイスを箇条書きで。重大なミスは特に強調）
 
 ## 次の10問で意識すること
-（1つだけ、具体的に）`;
+（1つだけ、具体的に）`
+      : `You are a GTO poker coach. Below are a student's preflop practice results.
+
+${historyText}
+
+## Statistics
+- Questions analyzed: ${analyzedCount}
+- Accuracy: ${stats.correct}/${stats.total} (${Math.round((stats.correct / stats.total) * 100)}%)
+- Weighted score: ${totalScore.toFixed(1)}/${maxScore.toFixed(1)} (${weightedPercentage}%)
+- Easy questions correct: ${obviousCorrects} (×0.5 score)
+- Normal correct: ${normalCorrects} (×1.0 score)
+- Borderline: ${borderlines} (×1.0 score for either choice)
+- Critical mistakes: ${criticalMistakes} (-0.5 penalty)
+
+## Scoring System
+- Easy questions (like raising AA) are worth less (0.5 points)
+- Borderline decisions are difficult, so both answers score full points (1 point)
+- Normal correct answers are 1 point
+- Critical mistakes incur -0.5 penalty
+- Higher weighted score means "correctly answering difficult questions"
+
+Analyze these results and provide feedback in the following format.
+Consider both simple accuracy and weighted score in your evaluation.
+
+## Analysis Results (${analyzedCount} questions)
+
+## Overall Assessment
+(2-3 sentences on general trends. Mention if accuracy and weighted score differ. Note any critical mistakes.)
+
+## Strengths
+(Bullet points of what's working well. Especially praise correct answers on difficult questions.)
+
+## Areas for Improvement
+(Specific advice in bullet points based on mistake patterns. Emphasize critical mistakes.)
+
+## Focus for Next 10 Questions
+(Just one specific point to focus on)`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',

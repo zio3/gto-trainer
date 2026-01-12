@@ -1,0 +1,91 @@
+{
+  "app": {
+    "title": "GTO プリフロップトレーナー",
+    "subtitle": "6-max / 100bb"
+  },
+  "stats": {
+    "accuracy": "正解率",
+    "aiAnalysis": "AI分析",
+    "aiAnalysisRemaining": "あと{count}問",
+    "offline": "オフライン",
+    "viewHistory": "履歴を見る"
+  },
+  "game": {
+    "startTraining": "トレーニング開始",
+    "situation": "シチュエーション",
+    "yourHand": "あなたのハンド",
+    "nextHand": "次のハンド",
+    "suited": "スーテッド",
+    "offsuit": "オフスート"
+  },
+  "actions": {
+    "raise": "Raise",
+    "fold": "Fold",
+    "call": "Call",
+    "threeBet": "3-Bet"
+  },
+  "result": {
+    "correct": "正解！",
+    "wrong": "不正解",
+    "borderline": "微妙なライン",
+    "obvious": "完璧！",
+    "criticalMistake": "これは覚えよう！",
+    "borderlineNote": "※ どちらの選択もありえます",
+    "yourChoice": "あなたの選択:",
+    "correctAnswer": "正解:"
+  },
+  "ai": {
+    "explainWithAi": "AIで詳しく解説",
+    "generating": "AI解説を生成中...",
+    "aiExplanation": "AI解説",
+    "askQuestion": "質問する",
+    "question": "質問",
+    "close": "閉じる",
+    "questionPlaceholder": "なぜこのハンドを...？",
+    "send": "送信",
+    "thinking": "考え中...",
+    "questionSection": "質問・疑問点"
+  },
+  "analysis": {
+    "title": "AI分析レポート",
+    "analyzing": "分析中...",
+    "generating": "生成中...",
+    "askAboutAnalysis": "分析について質問",
+    "placeholder": "この分析についてもっと詳しく...",
+    "minimumRequired": "分析には最低5問の回答が必要です"
+  },
+  "history": {
+    "title": "回答履歴",
+    "empty": "履歴がありません",
+    "clearAll": "全クリア",
+    "clearConfirm": "すべての履歴をクリアしますか？",
+    "delete": "削除"
+  },
+  "rangeChart": {
+    "title": "GTOレンジ表",
+    "open": "オープン",
+    "vsOpen": "vs オープン",
+    "opener": "オープン者（相手）",
+    "yourPosition": "自分のポジション",
+    "legend": {
+      "raise": "Raise",
+      "threeBet": "3-Bet",
+      "call": "Call",
+      "suited": "↗上: スーテッド",
+      "offsuit": "↙下: オフスート"
+    }
+  },
+  "footer": {
+    "disclaimer": "※ {link}に基づいています。実際のGTOはスタック・相手の傾向により変動します。",
+    "rangeLink": "簡易版GTOレンジ"
+  },
+  "common": {
+    "close": "閉じる",
+    "error": "エラーが発生しました"
+  },
+  "situations": {
+    "openAction": "{position}。最初のアクション。",
+    "foldedTo": "{position}。{folded}がフォールド。",
+    "vsOpen": "{position}。{villain}が2.5bbオープン。"
+  }
+}

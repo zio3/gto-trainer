@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://gto-trainer-eight.vercel.app
+
+# Sitemaps
+Sitemap: https://gto-trainer-eight.vercel.app/sitemap.xml

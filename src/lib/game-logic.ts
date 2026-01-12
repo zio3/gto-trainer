@@ -1,8 +1,38 @@
 import { Situation, Action, Position, AnswerLevel, ActionFrequency } from './types';
 import { generateRandomHandWithSuits, OPEN_RANGES, VS_OPEN_RANGES, BORDERLINE_HANDS, OBVIOUS_HANDS, MIXED_STRATEGY } from './gto-ranges';
 
+export type Locale = 'ja' | 'en';
+
+// ポジションに応じた説明文（言語対応）
+const getOpenDescriptions = (locale: Locale): Record<string, string> => {
+  if (locale === 'ja') {
+    return {
+      UTG: 'UTG。最初のアクション。',
+      HJ: 'HJ。UTGがフォールド。',
+      CO: 'CO。UTG、HJがフォールド。',
+      BTN: 'BTN。UTG〜COがフォールド。',
+      SB: 'SB。全員フォールドで回ってきた。',
+    };
+  }
+  return {
+    UTG: 'UTG. First to act.',
+    HJ: 'HJ. UTG folded.',
+    CO: 'CO. UTG, HJ folded.',
+    BTN: 'BTN. UTG-CO folded.',
+    SB: 'SB. Folded to you.',
+  };
+};
+
+// vsOpenシナリオの説明文（言語対応）
+const getVsOpenDescription = (hero: Position, villain: Position, locale: Locale): string => {
+  if (locale === 'ja') {
+    return `${hero}。${villain}が2.5bbオープン。`;
+  }
+  return `${hero}. ${villain} opened 2.5bb.`;
+};
+
 // シチュエーション生成（正解率に応じた難易度調整）
-export const generateSituation = (accuracy: number = 50): Situation => {
+export const generateSituation = (accuracy: number = 50, locale: Locale = 'ja'): Situation => {
   const rand = Math.random();
   const handData = generateRandomHandWithSuits(accuracy);
 
@@ -10,15 +40,7 @@ export const generateSituation = (accuracy: number = 50): Situation => {
     // オープンシチュエーション
     const positions: Position[] = ['UTG', 'HJ', 'CO', 'BTN', 'SB'];
     const position = positions[Math.floor(Math.random() * positions.length)];
-
-    // ポジションに応じた説明文
-    const descriptions: Record<string, string> = {
-      UTG: 'UTG。最初のアクション。',
-      HJ: 'HJ。UTGがフォールド。',
-      CO: 'CO。UTG、HJがフォールド。',
-      BTN: 'BTN。UTG〜COがフォールド。',
-      SB: 'SB。全員フォールドで回ってきた。',
-    };
+    const descriptions = getOpenDescriptions(locale);
 
     return {
       type: 'open',
@@ -30,26 +52,26 @@ export const generateSituation = (accuracy: number = 50): Situation => {
     };
   } else {
     // vs オープンシチュエーション（全ポジション対応）
-    const scenarios: { villain: Position; hero: Position; key: string; description: string }[] = [
+    const scenarios: { villain: Position; hero: Position; key: string }[] = [
       // BB vs
-      { villain: 'BTN', hero: 'BB', key: 'BB_vs_BTN', description: 'BB。BTNが2.5bbオープン。' },
-      { villain: 'CO', hero: 'BB', key: 'BB_vs_CO', description: 'BB。COが2.5bbオープン。' },
-      { villain: 'HJ', hero: 'BB', key: 'BB_vs_HJ', description: 'BB。HJが2.5bbオープン。' },
-      { villain: 'UTG', hero: 'BB', key: 'BB_vs_UTG', description: 'BB。UTGが2.5bbオープン。' },
+      { villain: 'BTN', hero: 'BB', key: 'BB_vs_BTN' },
+      { villain: 'CO', hero: 'BB', key: 'BB_vs_CO' },
+      { villain: 'HJ', hero: 'BB', key: 'BB_vs_HJ' },
+      { villain: 'UTG', hero: 'BB', key: 'BB_vs_UTG' },
       // SB vs
-      { villain: 'BTN', hero: 'SB', key: 'SB_vs_BTN', description: 'SB。BTNが2.5bbオープン。' },
-      { villain: 'CO', hero: 'SB', key: 'SB_vs_CO', description: 'SB。COが2.5bbオープン。' },
-      { villain: 'HJ', hero: 'SB', key: 'SB_vs_HJ', description: 'SB。HJが2.5bbオープン。' },
-      { villain: 'UTG', hero: 'SB', key: 'SB_vs_UTG', description: 'SB。UTGが2.5bbオープン。' },
+      { villain: 'BTN', hero: 'SB', key: 'SB_vs_BTN' },
+      { villain: 'CO', hero: 'SB', key: 'SB_vs_CO' },
+      { villain: 'HJ', hero: 'SB', key: 'SB_vs_HJ' },
+      { villain: 'UTG', hero: 'SB', key: 'SB_vs_UTG' },
       // BTN vs
-      { villain: 'CO', hero: 'BTN', key: 'BTN_vs_CO', description: 'BTN。COが2.5bbオープン。' },
-      { villain: 'HJ', hero: 'BTN', key: 'BTN_vs_HJ', description: 'BTN。HJが2.5bbオープン。' },
-      { villain: 'UTG', hero: 'BTN', key: 'BTN_vs_UTG', description: 'BTN。UTGが2.5bbオープン。' },
+      { villain: 'CO', hero: 'BTN', key: 'BTN_vs_CO' },
+      { villain: 'HJ', hero: 'BTN', key: 'BTN_vs_HJ' },
+      { villain: 'UTG', hero: 'BTN', key: 'BTN_vs_UTG' },
       // CO vs
-      { villain: 'HJ', hero: 'CO', key: 'CO_vs_HJ', description: 'CO。HJが2.5bbオープン。' },
-      { villain: 'UTG', hero: 'CO', key: 'CO_vs_UTG', description: 'CO。UTGが2.5bbオープン。' },
+      { villain: 'HJ', hero: 'CO', key: 'CO_vs_HJ' },
+      { villain: 'UTG', hero: 'CO', key: 'CO_vs_UTG' },
       // HJ vs
-      { villain: 'UTG', hero: 'HJ', key: 'HJ_vs_UTG', description: 'HJ。UTGが2.5bbオープン。' },
+      { villain: 'UTG', hero: 'HJ', key: 'HJ_vs_UTG' },
     ];
     const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
     return {
@@ -59,7 +81,7 @@ export const generateSituation = (accuracy: number = 50): Situation => {
       rangeKey: scenario.key,
       hand: handData.notation,
       handData,
-      description: scenario.description,
+      description: getVsOpenDescription(scenario.hero, scenario.villain, locale),
       options: ['3-Bet', 'Call', 'Fold'] as Action[],
     };
   }
@@ -160,39 +182,72 @@ export const getAnswerLevel = (
   }
 };
 
-// 解説生成
-export const getExplanation = (situation: Situation, correctAction: Action): string => {
+// 解説生成（言語対応）
+export const getExplanation = (situation: Situation, correctAction: Action, locale: Locale = 'ja'): string => {
   const hand = situation.hand;
 
   let explanation = '';
 
-  if (situation.type === 'open') {
-    if (correctAction === 'Raise') {
-      explanation = `${hand}は${situation.position}からのオープンレンジに含まれます。`;
-      if (hand.includes('A') && hand.endsWith('s') && !hand.includes('K') && !hand.includes('Q')) {
-        explanation += `\nスーテッドAは、フラッシュ・ストレートのポテンシャルとブロッカー効果があります。`;
-      }
-      if (hand.length === 2) {
-        explanation += `\nポケットペアはセットマイニングの価値があります。`;
+  if (locale === 'ja') {
+    if (situation.type === 'open') {
+      if (correctAction === 'Raise') {
+        explanation = `${hand}は${situation.position}からのオープンレンジに含まれます。`;
+        if (hand.includes('A') && hand.endsWith('s') && !hand.includes('K') && !hand.includes('Q')) {
+          explanation += `\nスーテッドAは、フラッシュ・ストレートのポテンシャルとブロッカー効果があります。`;
+        }
+        if (hand.length === 2) {
+          explanation += `\nポケットペアはセットマイニングの価値があります。`;
+        }
+      } else {
+        explanation = `${hand}は${situation.position}からのオープンには弱いです。`;
+        if (situation.position === 'UTG' || situation.position === 'HJ') {
+          explanation += `\nアーリーポジションでは、よりタイトなレンジでプレイします。`;
+        }
       }
     } else {
-      explanation = `${hand}は${situation.position}からのオープンには弱いです。`;
-      if (situation.position === 'UTG' || situation.position === 'HJ') {
-        explanation += `\nアーリーポジションでは、よりタイトなレンジでプレイします。`;
+      if (correctAction === '3-Bet') {
+        explanation = `${hand}はvs ${situation.villainPosition}で3-betできるハンドです。`;
+        if (hand.includes('A') && hand.endsWith('s') && ['A5s', 'A4s', 'A3s'].includes(hand)) {
+          explanation += `\n小さいスーテッドAはブラフ3-betとしても使えます（ブロッカー＋ナッツポテンシャル）。`;
+        }
+      } else if (correctAction === 'Call') {
+        explanation = `${hand}はコールに適したハンドです。`;
+        explanation += `\n3-betするには弱く、フォールドするにはもったいないレンジです。`;
+      } else {
+        explanation = `${hand}はここではフォールドが推奨されます。`;
+        explanation += `\n期待値的にプレイを続けるのが難しいハンドです。`;
       }
     }
   } else {
-    if (correctAction === '3-Bet') {
-      explanation = `${hand}はvs ${situation.villainPosition}で3-betできるハンドです。`;
-      if (hand.includes('A') && hand.endsWith('s') && ['A5s', 'A4s', 'A3s'].includes(hand)) {
-        explanation += `\n小さいスーテッドAはブラフ3-betとしても使えます（ブロッカー＋ナッツポテンシャル）。`;
+    // English
+    if (situation.type === 'open') {
+      if (correctAction === 'Raise') {
+        explanation = `${hand} is included in the ${situation.position} opening range.`;
+        if (hand.includes('A') && hand.endsWith('s') && !hand.includes('K') && !hand.includes('Q')) {
+          explanation += `\nSuited aces have flush/straight potential and blocker effects.`;
+        }
+        if (hand.length === 2) {
+          explanation += `\nPocket pairs have set mining value.`;
+        }
+      } else {
+        explanation = `${hand} is too weak to open from ${situation.position}.`;
+        if (situation.position === 'UTG' || situation.position === 'HJ') {
+          explanation += `\nPlay a tighter range from early positions.`;
+        }
       }
-    } else if (correctAction === 'Call') {
-      explanation = `${hand}はコールに適したハンドです。`;
-      explanation += `\n3-betするには弱く、フォールドするにはもったいないレンジです。`;
     } else {
-      explanation = `${hand}はここではフォールドが推奨されます。`;
-      explanation += `\n期待値的にプレイを続けるのが難しいハンドです。`;
+      if (correctAction === '3-Bet') {
+        explanation = `${hand} can 3-bet vs ${situation.villainPosition}.`;
+        if (hand.includes('A') && hand.endsWith('s') && ['A5s', 'A4s', 'A3s'].includes(hand)) {
+          explanation += `\nSmall suited aces work as bluff 3-bets (blocker + nuts potential).`;
+        }
+      } else if (correctAction === 'Call') {
+        explanation = `${hand} is a good calling hand.`;
+        explanation += `\nToo weak to 3-bet, too strong to fold.`;
+      } else {
+        explanation = `${hand} should fold here.`;
+        explanation += `\nNegative expected value to continue.`;
+      }
     }
   }
 

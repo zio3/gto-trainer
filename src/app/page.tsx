@@ -6,8 +6,10 @@ import PokerTable from '@/components/PokerTable';
 import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel, getActionFrequency, formatTopActions } from '@/lib/game-logic';
 import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Position, SCORE_WEIGHTS } from '@/lib/types';
 import { OPEN_RANGES, VS_OPEN_RANGES, RANKS } from '@/lib/gto-ranges';
+import { useTranslation } from '@/lib/i18n';
 
 export default function GTOTrainer() {
+  const { t, locale } = useTranslation();
   const [situation, setSituation] = useState<Situation | null>(null);
   const [result, setResult] = useState<Result | null>(null);
   const [stats, setStats] = useState<Stats>({ correct: 0, total: 0, weightedScore: 0, maxPossibleScore: 0 });
@@ -49,7 +51,7 @@ export default function GTOTrainer() {
   const startNewHand = useCallback(() => {
     // 正解率を計算して難易度調整
     const accuracy = stats.total > 0 ? (stats.correct / stats.total) * 100 : 50;
-    setSituation(generateSituation(accuracy));
+    setSituation(generateSituation(accuracy, locale));
     setResult(null);
     setShowChat(false);
     setChatHistory([]);
@@ -58,7 +60,7 @@ export default function GTOTrainer() {
     setTimeout(() => {
       situationRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 50);
-  }, [stats.correct, stats.total]);
+  }, [stats.correct, stats.total, locale]);
 
   // AI解説を取得
   const runAiExplanation = async () => {
@@ -66,9 +68,13 @@ export default function GTOTrainer() {
 
     setIsExplaining(true);
 
-    const situationText = situation.type === 'open'
-      ? `${situation.position}からのオープン判断。フォールドで回ってきた。`
-      : `${situation.position}で${situation.villainPosition}の2.5bbオープンに対する判断。`;
+    const situationText = locale === 'ja'
+      ? (situation.type === 'open'
+          ? `${situation.position}からのオープン判断。フォールドで回ってきた。`
+          : `${situation.position}で${situation.villainPosition}の2.5bbオープンに対する判断。`)
+      : (situation.type === 'open'
+          ? `Open decision from ${situation.position}. Folded to you.`
+          : `${situation.position} facing ${situation.villainPosition}'s 2.5bb open.`);
 
     try {
       const response = await fetch('/api/explain', {
@@ -80,17 +86,18 @@ export default function GTOTrainer() {
           correctAction: result.correctAction,
           userAction: result.userAction,
           isCorrect: result.isCorrect,
+          locale,
         }),
       });
 
       const data = await response.json();
       if (data.error) {
-        setAiExplanation('解説の取得に失敗しました: ' + data.error);
+        setAiExplanation((locale === 'ja' ? '解説の取得に失敗しました: ' : 'Failed to get explanation: ') + data.error);
       } else {
         setAiExplanation(data.text);
       }
     } catch (error) {
-      setAiExplanation('解説の取得に失敗しました: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setAiExplanation((locale === 'ja' ? '解説の取得に失敗しました: ' : 'Failed to get explanation: ') + (error instanceof Error ? error.message : 'Unknown error'));
     } finally {
       setIsExplaining(false);
     }
@@ -99,7 +106,7 @@ export default function GTOTrainer() {
   // AI分析を実行（ストリーミング）
   const runAnalysis = async () => {
     if (answerHistory.length < 5) {
-      alert('分析には最低5問の回答が必要です');
+      alert(t('analysis.minimumRequired'));
       return;
     }
 
@@ -117,19 +124,20 @@ export default function GTOTrainer() {
         body: JSON.stringify({
           history: recentHistory,
           stats,
+          locale,
         }),
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        setAnalysis('分析中にエラーが発生しました: ' + (errorData.error || 'Unknown error'));
+        setAnalysis((locale === 'ja' ? '分析中にエラーが発生しました: ' : 'Analysis error: ') + (errorData.error || 'Unknown error'));
         setIsAnalyzing(false);
         return;
       }
 
       const reader = response.body?.getReader();
       if (!reader) {
-        setAnalysis('ストリーミングに失敗しました');
+        setAnalysis(locale === 'ja' ? 'ストリーミングに失敗しました' : 'Streaming failed');
         setIsAnalyzing(false);
         return;
       }
@@ -147,7 +155,7 @@ export default function GTOTrainer() {
 
       setIsAnalyzing(false);
     } catch (error) {
-      setAnalysis('分析中にエラーが発生しました: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      setAnalysis((locale === 'ja' ? '分析中にエラーが発生しました: ' : 'Analysis error: ') + (error instanceof Error ? error.message : 'Unknown error'));
       setIsAnalyzing(false);
     }
   };
@@ -163,7 +171,7 @@ export default function GTOTrainer() {
     setAnalysisChatHistory(prev => [
       ...prev,
       { role: 'user', content: userMessage },
-      { role: 'assistant', content: '考え中...', isLoading: true },
+      { role: 'assistant', content: locale === 'ja' ? '考え中...' : 'Thinking...', isLoading: true },
     ]);
 
     try {
@@ -175,11 +183,12 @@ export default function GTOTrainer() {
           analysis,
           history: answerHistory,
           stats,
+          locale,
         }),
       });
 
       const data = await response.json();
-      const text = data.error ? 'エラーが発生しました: ' + data.error : data.text;
+      const text = data.error ? (locale === 'ja' ? 'エラーが発生しました: ' : 'Error: ') + data.error : data.text;
 
       setAnalysisChatHistory(prev => [
         ...prev.slice(0, -1),
@@ -188,7 +197,7 @@ export default function GTOTrainer() {
     } catch (error) {
       setAnalysisChatHistory(prev => [
         ...prev.slice(0, -1),
-        { role: 'assistant', content: 'エラーが発生しました: ' + (error instanceof Error ? error.message : 'Unknown error') },
+        { role: 'assistant', content: (locale === 'ja' ? 'エラーが発生しました: ' : 'Error: ') + (error instanceof Error ? error.message : 'Unknown error') },
       ]);
     }
   };
@@ -197,7 +206,7 @@ export default function GTOTrainer() {
     if (!situation) return;
 
     const correctAction = getCorrectAction(situation);
-    const explanation = getExplanation(situation, correctAction);
+    const explanation = getExplanation(situation, correctAction, locale);
     const level = getAnswerLevel(situation, action, correctAction);
     // ボーダーラインはどちらでも正解扱い
     const isCorrect = action === correctAction || level === 'borderline';
@@ -259,7 +268,7 @@ export default function GTOTrainer() {
   };
 
   const handleClearAllHistory = () => {
-    if (!confirm('すべての履歴をクリアしますか？')) return;
+    if (!confirm(t('history.clearConfirm'))) return;
     setAnswerHistory([]);
     setStats({ correct: 0, total: 0, weightedScore: 0, maxPossibleScore: 0 });
     setAnalysis(null);
@@ -277,13 +286,17 @@ export default function GTOTrainer() {
     setChatHistory(prev => [
       ...prev,
       { role: 'user', content: userMessage },
-      { role: 'assistant', content: '考え中...', isLoading: true },
+      { role: 'assistant', content: locale === 'ja' ? '考え中...' : 'Thinking...', isLoading: true },
     ]);
 
     // コンテキスト情報を構築
-    const situationContext = situation.type === 'open'
-      ? `${situation.position}からのオープン判断`
-      : `${situation.position} vs ${situation.villainPosition}のオープンに対する判断`;
+    const situationContext = locale === 'ja'
+      ? (situation.type === 'open'
+          ? `${situation.position}からのオープン判断`
+          : `${situation.position} vs ${situation.villainPosition}のオープンに対する判断`)
+      : (situation.type === 'open'
+          ? `Open decision from ${situation.position}`
+          : `Decision vs ${situation.villainPosition}'s open from ${situation.position}`);
 
     try {
       const response = await fetch('/api/chat', {
@@ -299,11 +312,12 @@ export default function GTOTrainer() {
             isCorrect: result.isCorrect,
             aiExplanation: aiExplanation || null,
           },
+          locale,
         }),
       });
 
       const data = await response.json();
-      const text = data.error ? 'エラーが発生しました: ' + data.error : data.text;
+      const text = data.error ? (locale === 'ja' ? 'エラーが発生しました: ' : 'Error: ') + data.error : data.text;
 
       // ローディング状態を実際の回答で置き換え
       setChatHistory(prev => [
@@ -313,7 +327,7 @@ export default function GTOTrainer() {
     } catch (error) {
       setChatHistory(prev => [
         ...prev.slice(0, -1),
-        { role: 'assistant', content: 'エラーが発生しました: ' + (error instanceof Error ? error.message : 'Unknown error') },
+        { role: 'assistant', content: (locale === 'ja' ? 'エラーが発生しました: ' : 'Error: ') + (error instanceof Error ? error.message : 'Unknown error') },
       ]);
     }
   };
@@ -321,13 +335,13 @@ export default function GTOTrainer() {
   return (
     <div className="min-h-screen bg-gray-900 text-white pb-32">
       <div className="max-w-lg mx-auto p-4">
-        <h1 className="text-2xl font-bold text-center mb-2">GTO プリフロップトレーナー</h1>
-        <p className="text-gray-400 text-center text-sm mb-6">6-max / 100bb</p>
+        <h1 className="text-2xl font-bold text-center mb-2">{t('app.title')}</h1>
+        <p className="text-gray-400 text-center text-sm mb-6">{t('app.subtitle')}</p>
 
         {/* Stats */}
         <div className="bg-gray-800 rounded-lg p-3 mb-6">
           <div className="flex justify-between items-center">
-            <span className="text-gray-400">正解率</span>
+            <span className="text-gray-400">{t('stats.accuracy')}</span>
             <span className="text-xl font-bold">
               {stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0}%
               <span className="text-sm text-gray-400 ml-2">({stats.correct}/{stats.total})</span>
@@ -345,18 +359,18 @@ export default function GTOTrainer() {
                       : 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   }`}
                 >
-                  <span>📊</span> AI分析{stats.total < 5 && <span className="text-xs ml-1">(あと{5 - stats.total}問)</span>}
+                  <span>📊</span> {t('stats.aiAnalysis')}{stats.total < 5 && <span className="text-xs ml-1">({t('stats.aiAnalysisRemaining', { count: 5 - stats.total })})</span>}
                 </button>
               ) : (
                 <div className="flex-1 bg-gray-700 text-gray-500 py-2 px-3 rounded-lg text-sm font-bold flex items-center justify-center gap-1">
-                  <span>📴</span> オフライン
+                  <span>📴</span> {t('stats.offline')}
                 </div>
               )}
               <button
                 onClick={() => setShowHistory(true)}
                 className="flex-1 bg-gray-600 hover:bg-gray-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
               >
-                <span>📝</span> 履歴を見る
+                <span>📝</span> {t('stats.viewHistory')}
               </button>
             </div>
           )}
@@ -367,7 +381,7 @@ export default function GTOTrainer() {
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">📊 AI分析レポート</h2>
+                <h2 className="text-xl font-bold">📊 {t('analysis.title')}</h2>
                 <button
                   onClick={() => setShowAnalysis(false)}
                   className="text-gray-400 hover:text-white text-2xl"
@@ -393,13 +407,13 @@ export default function GTOTrainer() {
                 ) : isAnalyzing ? (
                   <div className="flex flex-col items-center py-8">
                     <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500 mb-4"></div>
-                    <p className="text-gray-400">分析中...</p>
+                    <p className="text-gray-400">{t('analysis.analyzing')}</p>
                   </div>
                 ) : null}
                 {isAnalyzing && analysis && (
                   <div className="flex items-center gap-2 mt-4 text-purple-400">
                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-purple-400"></div>
-                    <span className="text-sm">生成中...</span>
+                    <span className="text-sm">{t('analysis.generating')}</span>
                   </div>
                 )}
               </div>
@@ -407,7 +421,7 @@ export default function GTOTrainer() {
               {/* 分析に対するチャット */}
               {!isAnalyzing && analysis && (
                 <div className="mt-6 border-t border-gray-700 pt-4">
-                  <div className="text-gray-400 text-sm mb-3">分析について質問</div>
+                  <div className="text-gray-400 text-sm mb-3">{t('analysis.askAboutAnalysis')}</div>
 
                   {analysisChatHistory.length > 0 && (
                     <div className="space-y-3 mb-4 max-h-40 overflow-y-auto">
@@ -423,7 +437,7 @@ export default function GTOTrainer() {
                           {msg.isLoading ? (
                             <div className="flex items-center gap-2">
                               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                              <span className="text-gray-400">考え中...</span>
+                              <span className="text-gray-400">{t('ai.thinking')}</span>
                             </div>
                           ) : (
                             <p className="whitespace-pre-line">{msg.content}</p>
@@ -438,14 +452,14 @@ export default function GTOTrainer() {
                       type="text"
                       value={analysisChatInput}
                       onChange={(e) => setAnalysisChatInput(e.target.value)}
-                      placeholder="この分析についてもっと詳しく..."
+                      placeholder={t('analysis.placeholder')}
                       className="flex-1 bg-gray-700 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-purple-500"
                     />
                     <button
                       type="submit"
                       className="bg-purple-600 hover:bg-purple-500 px-4 py-2 rounded-lg text-sm transition-colors"
                     >
-                      送信
+                      {t('ai.send')}
                     </button>
                   </form>
                 </div>
@@ -458,7 +472,7 @@ export default function GTOTrainer() {
                 }}
                 className="w-full mt-6 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg font-bold transition-colors"
               >
-                閉じる
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -469,7 +483,7 @@ export default function GTOTrainer() {
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
             <div className="bg-gray-800 rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold">📝 回答履歴</h2>
+                <h2 className="text-xl font-bold">📝 {t('history.title')}</h2>
                 <button
                   onClick={() => setShowHistory(false)}
                   className="text-gray-400 hover:text-white text-2xl"
@@ -479,7 +493,7 @@ export default function GTOTrainer() {
               </div>
 
               {answerHistory.length === 0 ? (
-                <p className="text-gray-400 text-center py-8">履歴がありません</p>
+                <p className="text-gray-400 text-center py-8">{t('history.empty')}</p>
               ) : (
                 <div className="space-y-2">
                   {/* 全クリアボタン */}
@@ -488,7 +502,7 @@ export default function GTOTrainer() {
                       onClick={handleClearAllHistory}
                       className="text-xs text-gray-500 hover:text-red-400 transition-colors"
                     >
-                      🗑️ 全クリア
+                      🗑️ {t('history.clearAll')}
                     </button>
                   </div>
                   {answerHistory.map((entry, index) => (
@@ -529,7 +543,7 @@ export default function GTOTrainer() {
                       <button
                         onClick={() => handleDeleteHistory(index)}
                         className="ml-3 p-2 text-gray-400 hover:text-red-400 hover:bg-red-900/30 rounded transition-colors"
-                        title="削除"
+                        title={t('history.delete')}
                       >
                         🗑️
                       </button>
@@ -542,7 +556,7 @@ export default function GTOTrainer() {
                 onClick={() => setShowHistory(false)}
                 className="w-full mt-6 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg font-bold transition-colors"
               >
-                閉じる
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -553,7 +567,7 @@ export default function GTOTrainer() {
           <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-2 z-50">
             <div className="bg-gray-800 rounded-lg p-4 max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-3">
-                <h2 className="text-lg font-bold">📊 GTOレンジ表</h2>
+                <h2 className="text-lg font-bold">📊 {t('rangeChart.title')}</h2>
                 <button
                   onClick={() => setShowRangeChart(false)}
                   className="text-gray-400 hover:text-white text-2xl"
@@ -570,7 +584,7 @@ export default function GTOTrainer() {
                     selectedRangeType === 'open' ? 'bg-blue-600' : 'bg-gray-700'
                   }`}
                 >
-                  オープン
+                  {t('rangeChart.open')}
                 </button>
                 <button
                   onClick={() => setSelectedRangeType('vsOpen')}
@@ -578,7 +592,7 @@ export default function GTOTrainer() {
                     selectedRangeType === 'vsOpen' ? 'bg-blue-600' : 'bg-gray-700'
                   }`}
                 >
-                  vs オープン
+                  {t('rangeChart.vsOpen')}
                 </button>
               </div>
 
@@ -601,7 +615,7 @@ export default function GTOTrainer() {
                 <div className="space-y-3 mb-3">
                   {/* Step 1: Select opener */}
                   <div>
-                    <div className="text-xs text-gray-400 mb-1">オープン者（相手）</div>
+                    <div className="text-xs text-gray-400 mb-1">{t('rangeChart.opener')}</div>
                     <div className="flex gap-1">
                       {(['UTG', 'HJ', 'CO', 'BTN'] as Position[]).map((pos) => (
                         <button
@@ -632,7 +646,7 @@ export default function GTOTrainer() {
 
                   {/* Step 2: Select hero position */}
                   <div>
-                    <div className="text-xs text-gray-400 mb-1">自分のポジション</div>
+                    <div className="text-xs text-gray-400 mb-1">{t('rangeChart.yourPosition')}</div>
                     <div className="flex gap-1">
                       {(() => {
                         const validHeroes: Record<string, Position[]> = {
@@ -661,7 +675,7 @@ export default function GTOTrainer() {
                     <span className="text-blue-400 font-bold">{selectedHero}</span>
                     <span className="text-gray-400"> vs </span>
                     <span className="text-red-400 font-bold">{selectedOpener}</span>
-                    <span className="text-gray-400">オープン</span>
+                    <span className="text-gray-400"> {locale === 'ja' ? 'オープン' : 'open'}</span>
                   </div>
                 </div>
               )}
@@ -671,24 +685,24 @@ export default function GTOTrainer() {
                 {selectedRangeType === 'open' ? (
                   <div className="flex items-center gap-1">
                     <div className="w-3 h-3 bg-green-600 rounded"></div>
-                    <span className="text-gray-400">Raise</span>
+                    <span className="text-gray-400">{t('rangeChart.legend.raise')}</span>
                   </div>
                 ) : (
                   <>
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 bg-red-600 rounded"></div>
-                      <span className="text-gray-400">3-Bet</span>
+                      <span className="text-gray-400">{t('rangeChart.legend.threeBet')}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <div className="w-3 h-3 bg-blue-600 rounded"></div>
-                      <span className="text-gray-400">Call</span>
+                      <span className="text-gray-400">{t('rangeChart.legend.call')}</span>
                     </div>
                   </>
                 )}
                 <div className="flex items-center gap-1 text-gray-500">
                   <span>|</span>
-                  <span>↗上: スーテッド</span>
-                  <span>↙下: オフスート</span>
+                  <span>{t('rangeChart.legend.suited')}</span>
+                  <span>{t('rangeChart.legend.offsuit')}</span>
                 </div>
               </div>
 
@@ -748,7 +762,7 @@ export default function GTOTrainer() {
                 onClick={() => setShowRangeChart(false)}
                 className="w-full mt-4 bg-gray-600 hover:bg-gray-500 py-2 rounded-lg font-bold transition-colors"
               >
-                閉じる
+                {t('common.close')}
               </button>
             </div>
           </div>
@@ -759,7 +773,7 @@ export default function GTOTrainer() {
             onClick={startNewHand}
             className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-4 px-6 rounded-lg text-lg transition-colors"
           >
-            トレーニング開始
+            {t('game.startTraining')}
           </button>
         ) : (
           <div className="space-y-4">
@@ -773,7 +787,7 @@ export default function GTOTrainer() {
 
             {/* Situation Display */}
             <div className="bg-gray-800 rounded-lg p-4">
-              <div className="text-gray-400 text-sm mb-2">シチュエーション</div>
+              <div className="text-gray-400 text-sm mb-2">{t('game.situation')}</div>
               <p className="text-lg mb-4">
                 {situation.description.split(/(UTG|HJ|CO|BTN|SB|BB)/g).map((part, i) => {
                   if (part === situation.position) {
@@ -789,7 +803,7 @@ export default function GTOTrainer() {
                 })}
               </p>
 
-              <div className="text-gray-400 text-sm mb-2">あなたのハンド</div>
+              <div className="text-gray-400 text-sm mb-2">{t('game.yourHand')}</div>
               <div className="py-4 bg-gray-700 rounded-lg flex justify-center">
                 <HandDisplay handData={situation.handData} />
               </div>
@@ -818,23 +832,23 @@ export default function GTOTrainer() {
                      '✓'}
                   </span>
                   <span className="text-xl font-bold">
-                    {result.level === 'critical_mistake' ? 'これは覚えよう！' :
-                     result.level === 'wrong' ? '不正解' :
-                     result.level === 'borderline' ? '微妙なライン' :
-                     result.level === 'obvious' ? '完璧！' :
-                     '正解！'}
+                    {result.level === 'critical_mistake' ? t('result.criticalMistake') :
+                     result.level === 'wrong' ? t('result.wrong') :
+                     result.level === 'borderline' ? t('result.borderline') :
+                     result.level === 'obvious' ? t('result.obvious') :
+                     t('result.correct')}
                   </span>
                 </div>
                 {result.level === 'borderline' && (
                   <p className="text-yellow-300 text-sm mb-2">
-                    ※ どちらの選択もありえます
+                    {t('result.borderlineNote')}
                   </p>
                 )}
 
                 {/* 選択と正解を常に表示 */}
                 <div className="bg-black bg-opacity-30 rounded-lg p-3 mb-3 space-y-2">
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">あなたの選択:</span>
+                    <span className="text-gray-400">{t('result.yourChoice')}</span>
                     <span className={`font-bold px-3 py-1 rounded ${
                       result.isCorrect ? 'bg-green-700' : 'bg-gray-600'
                     }`}>
@@ -842,7 +856,7 @@ export default function GTOTrainer() {
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="text-gray-400">正解:</span>
+                    <span className="text-gray-400">{t('result.correctAnswer')}</span>
                     {result.level === 'borderline' && situation ? (
                       (() => {
                         const freq = getActionFrequency(situation);
@@ -876,13 +890,13 @@ export default function GTOTrainer() {
                       onClick={runAiExplanation}
                       className="flex-1 bg-amber-600 hover:bg-amber-700 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
                     >
-                      <span>🤖</span> AIで詳しく解説
+                      <span>🤖</span> {t('ai.explainWithAi')}
                     </button>
                     <button
                       onClick={() => setShowChat(!showChat)}
                       className="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
                     >
-                      <span>💬</span> {showChat ? '閉じる' : '質問'}
+                      <span>💬</span> {showChat ? t('ai.close') : t('ai.question')}
                     </button>
                   </div>
                 )}
@@ -892,14 +906,14 @@ export default function GTOTrainer() {
                     <div className="flex-1 bg-black bg-opacity-30 rounded-lg p-3">
                       <div className="flex items-center gap-2">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-amber-500"></div>
-                        <span className="text-gray-400 text-sm">AI解説を生成中...</span>
+                        <span className="text-gray-400 text-sm">{t('ai.generating')}</span>
                       </div>
                     </div>
                     <button
                       onClick={() => setShowChat(!showChat)}
                       className="bg-blue-600 hover:bg-blue-500 text-white py-2 px-3 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
                     >
-                      <span>💬</span> {showChat ? '閉じる' : '質問'}
+                      <span>💬</span> {showChat ? t('ai.close') : t('ai.question')}
                     </button>
                   </div>
                 )}
@@ -908,14 +922,14 @@ export default function GTOTrainer() {
                   <div className="mt-3 bg-black bg-opacity-30 rounded-lg p-3">
                     <div className="flex items-center gap-1 mb-2">
                       <span>🤖</span>
-                      <span className="text-amber-400 text-sm font-bold">AI解説</span>
+                      <span className="text-amber-400 text-sm font-bold">{t('ai.aiExplanation')}</span>
                     </div>
                     <p className="text-gray-300 text-sm whitespace-pre-line">{aiExplanation}</p>
                     <button
                       onClick={() => setShowChat(!showChat)}
                       className="mt-3 bg-blue-600 hover:bg-blue-500 text-white py-2 px-4 rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-1"
                     >
-                      <span>💬</span> {showChat ? '閉じる' : '質問する'}
+                      <span>💬</span> {showChat ? t('ai.close') : t('ai.askQuestion')}
                     </button>
                   </div>
                 )}
@@ -925,7 +939,7 @@ export default function GTOTrainer() {
             {/* Chat Section（オンライン時のみ） */}
             {isOnline && showChat && (
               <div className="bg-gray-800 rounded-lg p-4">
-                <div className="text-gray-400 text-sm mb-3">質問・疑問点</div>
+                <div className="text-gray-400 text-sm mb-3">{t('ai.questionSection')}</div>
 
                 {chatHistory.length > 0 && (
                   <div className="space-y-3 mb-4 max-h-60 overflow-y-auto">
@@ -941,7 +955,7 @@ export default function GTOTrainer() {
                         {msg.isLoading ? (
                           <div className="flex items-center gap-2">
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            <span className="text-gray-400">考え中...</span>
+                            <span className="text-gray-400">{t('ai.thinking')}</span>
                           </div>
                         ) : (
                           <p className="whitespace-pre-line">{msg.content}</p>
@@ -956,14 +970,14 @@ export default function GTOTrainer() {
                     type="text"
                     value={chatInput}
                     onChange={(e) => setChatInput(e.target.value)}
-                    placeholder="なぜこのハンドを...？"
+                    placeholder={t('ai.questionPlaceholder')}
                     className="flex-1 bg-gray-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-blue-500"
                   />
                   <button
                     type="submit"
                     className="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded-lg transition-colors"
                   >
-                    送信
+                    {t('ai.send')}
                   </button>
                 </form>
               </div>
@@ -972,7 +986,7 @@ export default function GTOTrainer() {
         )}
 
         <p className="text-gray-500 text-xs text-center mt-8">
-          ※ <button onClick={() => setShowRangeChart(true)} className="underline hover:text-gray-300 transition-colors">簡易版GTOレンジ</button>に基づいています。実際のGTOはスタック・相手の傾向により変動します。
+          {locale === 'ja' ? '※ ' : '* '}<button onClick={() => setShowRangeChart(true)} className="underline hover:text-gray-300 transition-colors">{t('footer.rangeLink')}</button>{locale === 'ja' ? 'に基づいています。実際のGTOはスタック・相手の傾向により変動します。' : '. Actual GTO varies by stack size and opponent tendencies.'}
         </p>
       </div>
 
@@ -1007,7 +1021,7 @@ export default function GTOTrainer() {
                 onClick={startNewHand}
                 className="w-full bg-green-600 hover:bg-green-700 py-4 rounded-lg font-bold text-lg transition-colors"
               >
-                次のハンド
+                {t('game.nextHand')}
               </button>
             )}
           </div>

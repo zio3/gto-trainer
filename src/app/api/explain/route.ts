@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    const { situation, hand, correctAction, userAction, isCorrect } = await request.json();
+    const { situation, hand, correctAction, userAction, isCorrect, locale = 'ja' } = await request.json();
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const prompt = `あなたはポーカーのGTOコーチです。以下のプリフロップシチュエーションについて、初心者にもわかりやすく解説してください。
+    const prompt = locale === 'ja'
+      ? `あなたはポーカーのGTOコーチです。以下のプリフロップシチュエーションについて、初心者にもわかりやすく解説してください。
 
 ## シチュエーション
 ${situation}
@@ -32,7 +33,28 @@ ${userAction} (${isCorrect ? '正解' : '不正解'})
 3. ポジションの影響
 ${!isCorrect ? '4. ユーザーの選択がなぜ適切でないか' : ''}
 
-日本語で回答してください。`;
+日本語で回答してください。`
+      : `You are a GTO poker coach. Explain the following preflop situation in a beginner-friendly way.
+
+## Situation
+${situation}
+
+## Hand
+${hand}
+
+## Correct Action
+${correctAction}
+
+## User's Choice
+${userAction} (${isCorrect ? 'Correct' : 'Incorrect'})
+
+Include the following points in a concise 100-150 word explanation:
+1. Why this action is correct
+2. Hand characteristics (blockers, potential, etc.)
+3. Position impact
+${!isCorrect ? '4. Why the user\'s choice is suboptimal' : ''}
+
+Respond in English.`;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -58,7 +80,8 @@ ${!isCorrect ? '4. ユーザーの選択がなぜ適切でないか' : ''}
     }
 
     const data = await response.json();
-    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || '解説を取得できませんでした';
+    const fallbackText = locale === 'ja' ? '解説を取得できませんでした' : 'Could not get explanation';
+    const text = data.content?.map((item: { text?: string }) => item.text || '').join('\n') || fallbackText;
 
     return NextResponse.json({ text });
   } catch (error) {
