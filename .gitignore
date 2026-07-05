@@ -48,3 +48,6 @@ next-env.d.ts
 
 # claude temp
 tmpclaude-*
+
+# local MCP config
+.mcp.json
