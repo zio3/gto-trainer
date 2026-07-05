@@ -1,6 +1,8 @@
 # *
 User-agent: *
 Allow: /
+Disallow: /preview
+Disallow: /api
 
 # Host
 Host: https://gto-trainer-eight.vercel.app

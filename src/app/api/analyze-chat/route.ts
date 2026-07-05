@@ -1,17 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-
-interface HistoryEntry {
-  situation: string;
-  hand: string;
-  correct: string;
-  user: string;
-  isCorrect: boolean;
-  level: string;
-}
+import { LIMITS, isValidLocale, isShortString, sanitizeHistory, getClientIp, isRateLimited, badRequest, tooManyRequests } from '@/lib/api-guard';
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, analysis, history, stats, locale = 'ja' } = await request.json();
+    if (isRateLimited(getClientIp(request))) return tooManyRequests();
+
+    const { message, analysis, history: rawHistory, stats, locale = 'ja' } = await request.json();
+
+    const history = sanitizeHistory(rawHistory);
+    if (
+      !isValidLocale(locale) ||
+      !isShortString(message, LIMITS.message) ||
+      !isShortString(analysis, LIMITS.analysis) ||
+      !history ||
+      typeof stats !== 'object' || stats === null ||
+      typeof stats.correct !== 'number' ||
+      typeof stats.total !== 'number'
+    ) {
+      return badRequest();
+    }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -22,7 +29,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 履歴の要約
-    const historySummary = history.slice(-10).map((h: HistoryEntry, i: number) =>
+    const historySummary = history.slice(-10).map((h, i) =>
       `${i + 1}. ${h.situation} | ${h.hand} | ${h.isCorrect ? '○' : '×'}`
     ).join('\n');
 
@@ -70,7 +77,7 @@ Keep your response around 100-200 words in English.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5',
         max_tokens: 600,
         messages: [{ role: 'user', content: prompt }],
       }),

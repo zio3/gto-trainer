@@ -8,6 +8,16 @@ import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Posi
 import { OPEN_RANGES, VS_OPEN_RANGES, RANKS } from '@/lib/gto-ranges';
 import { useTranslation } from '@/lib/i18n';
 
+// vsOpen レンジ表: オープナーごとに選択可能なヒーローポジション
+const VALID_HEROES: Record<string, Position[]> = {
+  UTG: ['HJ', 'CO', 'BTN', 'SB', 'BB'],
+  HJ: ['CO', 'BTN', 'SB', 'BB'],
+  CO: ['BTN', 'SB', 'BB'],
+  BTN: ['SB', 'BB'],
+};
+
+const STORAGE_KEY = 'gto-trainer-progress';
+
 export default function GTOTrainer() {
   const { t, locale } = useTranslation();
   const [situation, setSituation] = useState<Situation | null>(null);
@@ -31,9 +41,37 @@ export default function GTOTrainer() {
   const [selectedOpener, setSelectedOpener] = useState<Position>('BTN');
   const [selectedHero, setSelectedHero] = useState<Position>('BB');
   const [isOnline, setIsOnline] = useState(true);
+  const [isRestored, setIsRestored] = useState(false);
 
   const resultRef = useRef<HTMLDivElement>(null);
   const situationRef = useRef<HTMLDivElement>(null);
+
+  // 履歴・統計を localStorage から復元
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        const data = JSON.parse(saved);
+        if (Array.isArray(data.answerHistory) && data.stats && typeof data.stats.total === 'number') {
+          setAnswerHistory(data.answerHistory);
+          setStats(data.stats);
+        }
+      }
+    } catch {
+      // 壊れたデータは無視して初期状態で開始
+    }
+    setIsRestored(true);
+  }, []);
+
+  // 履歴・統計を localStorage へ保存（復元完了後のみ）
+  useEffect(() => {
+    if (!isRestored) return;
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({ answerHistory, stats }));
+    } catch {
+      // 容量超過等は無視
+    }
+  }, [answerHistory, stats, isRestored]);
 
   // オンライン/オフライン状態を監視
   useEffect(() => {
@@ -623,15 +661,9 @@ export default function GTOTrainer() {
                           onClick={() => {
                             setSelectedOpener(pos);
                             // Reset hero to valid position for this opener
-                            const heroMap: Record<string, string[]> = {
-                              UTG: ['HJ', 'CO', 'BTN', 'SB', 'BB'],
-                              HJ: ['CO', 'BTN', 'SB', 'BB'],
-                              CO: ['BTN', 'SB', 'BB'],
-                              BTN: ['SB', 'BB'],
-                            };
-                            const validHeroes = heroMap[pos] || ['BB'];
+                            const validHeroes = VALID_HEROES[pos] || ['BB'];
                             if (!validHeroes.includes(selectedHero)) {
-                              setSelectedHero(validHeroes[validHeroes.length - 1] as Position);
+                              setSelectedHero(validHeroes[validHeroes.length - 1]);
                             }
                           }}
                           className={`px-3 py-2 rounded text-sm font-bold transition-colors ${
@@ -649,13 +681,7 @@ export default function GTOTrainer() {
                     <div className="text-xs text-gray-400 mb-1">{t('rangeChart.yourPosition')}</div>
                     <div className="flex gap-1">
                       {(() => {
-                        const validHeroes: Record<string, Position[]> = {
-                          UTG: ['HJ', 'CO', 'BTN', 'SB', 'BB'],
-                          HJ: ['CO', 'BTN', 'SB', 'BB'],
-                          CO: ['BTN', 'SB', 'BB'],
-                          BTN: ['SB', 'BB'],
-                        };
-                        return (validHeroes[selectedOpener] || ['BB']).map((pos) => (
+                        return (VALID_HEROES[selectedOpener] || ['BB']).map((pos) => (
                           <button
                             key={pos}
                             onClick={() => setSelectedHero(pos)}

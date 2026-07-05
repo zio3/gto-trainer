@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { isValidLocale, sanitizeHistory, getClientIp, isRateLimited, badRequest, tooManyRequests } from '@/lib/api-guard';
 
 interface HistoryEntry {
   situation: string;
@@ -6,8 +7,8 @@ interface HistoryEntry {
   correct: string;
   user: string;
   isCorrect: boolean;
-  level: 'critical_mistake' | 'wrong' | 'borderline' | 'correct' | 'obvious';
-  score: number;
+  level: string;
+  score?: number;
 }
 
 const levelLabelsJa: Record<string, string> = {
@@ -36,7 +37,22 @@ const scoreWeights: Record<string, number> = {
 
 export async function POST(request: NextRequest) {
   try {
-    const { history, stats, locale = 'ja' } = await request.json();
+    if (isRateLimited(getClientIp(request))) return tooManyRequests();
+
+    const { history: rawHistory, stats, locale = 'ja' } = await request.json();
+
+    const history = sanitizeHistory(rawHistory);
+    if (
+      !isValidLocale(locale) ||
+      !history ||
+      typeof stats !== 'object' || stats === null ||
+      typeof stats.correct !== 'number' ||
+      typeof stats.total !== 'number' ||
+      stats.total <= 0
+    ) {
+      return badRequest();
+    }
+
     const levelLabels = locale === 'ja' ? levelLabelsJa : levelLabelsEn;
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -61,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     // 重み付きスコア計算
     const totalScore = history.reduce((sum: number, h: HistoryEntry) => sum + (h.score ?? 0), 0);
-    const maxScore = history.reduce((sum: number, h: HistoryEntry) => sum + scoreWeights[h.level], 0);
+    const maxScore = history.reduce((sum: number, h: HistoryEntry) => sum + (scoreWeights[h.level] ?? 1.0), 0);
     const weightedPercentage = maxScore > 0 ? Math.round((totalScore / maxScore) * 100) : 0;
 
     const analyzedCount = history.length;
@@ -148,7 +164,7 @@ Consider both simple accuracy and weighted score in your evaluation.
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5',
         max_tokens: 1000,
         stream: true,
         messages: [{ role: 'user', content: prompt }],

@@ -1,8 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { LIMITS, isValidLocale, isShortString, getClientIp, isRateLimited, badRequest, tooManyRequests } from '@/lib/api-guard';
 
 export async function POST(request: NextRequest) {
   try {
+    if (isRateLimited(getClientIp(request))) return tooManyRequests();
+
     const { situation, hand, correctAction, userAction, isCorrect, locale = 'ja' } = await request.json();
+
+    if (
+      !isValidLocale(locale) ||
+      !isShortString(situation, LIMITS.situation) ||
+      !isShortString(hand, LIMITS.hand) ||
+      !isShortString(correctAction, LIMITS.action) ||
+      !isShortString(userAction, LIMITS.action) ||
+      typeof isCorrect !== 'boolean'
+    ) {
+      return badRequest();
+    }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -64,7 +78,7 @@ Respond in English.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
+        model: 'claude-haiku-4-5',
         max_tokens: 400,
         messages: [{ role: 'user', content: prompt }],
       }),

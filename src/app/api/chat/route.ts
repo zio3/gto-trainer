@@ -1,8 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { LIMITS, isValidLocale, isShortString, getClientIp, isRateLimited, badRequest, tooManyRequests } from '@/lib/api-guard';
 
 export async function POST(request: NextRequest) {
   try {
+    if (isRateLimited(getClientIp(request))) return tooManyRequests();
+
     const { message, context, locale = 'ja' } = await request.json();
+
+    if (
+      !isValidLocale(locale) ||
+      !isShortString(message, LIMITS.message) ||
+      typeof context !== 'object' || context === null ||
+      !isShortString(context.situationContext, LIMITS.situation) ||
+      !isShortString(context.hand, LIMITS.hand) ||
+      !isShortString(context.correctAction, LIMITS.action) ||
+      !isShortString(context.userAction, LIMITS.action) ||
+      typeof context.isCorrect !== 'boolean' ||
+      (context.aiExplanation != null && !isShortString(context.aiExplanation, LIMITS.aiExplanation))
+    ) {
+      return badRequest();
+    }
 
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
@@ -50,7 +67,7 @@ Keep your response around 100-150 words in English.`;
         'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-5',
         max_tokens: 500,
         messages: [{ role: 'user', content: prompt }],
       }),

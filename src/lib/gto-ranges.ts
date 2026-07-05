@@ -571,19 +571,14 @@ const getBorderlineRate = (accuracy: number): number => {
 };
 
 // ハンド生成（正解率に応じた難易度調整版）
-export const generateRandomHandWithSuits = (accuracy: number = 50): HandData => {
+// borderlinePool: 出題するシチュエーションにおけるボーダーラインハンド一覧。
+// シチュエーションを先に決めてから呼ぶことで、そのレンジで実際に難しいハンドが出る。
+export const generateHandForContext = (accuracy: number, borderlinePool: string[]): HandData => {
   const borderlineRate = getBorderlineRate(accuracy);
 
   // 正解率に応じた確率でボーダーラインハンドから選ぶ
-  if (Math.random() < borderlineRate) {
-    const allBorderlineHands = [
-      ...new Set([
-        ...Object.values(BORDERLINE_HANDS.open).flat(),
-        ...Object.values(BORDERLINE_HANDS.vsOpen).flatMap(v => [...v.threebet, ...v.call]),
-      ])
-    ];
-
-    const notation = allBorderlineHands[Math.floor(Math.random() * allBorderlineHands.length)];
+  if (borderlinePool.length > 0 && Math.random() < borderlineRate) {
+    const notation = borderlinePool[Math.floor(Math.random() * borderlinePool.length)];
     return notationToHandData(notation);
   }
 
@@ -604,8 +599,7 @@ export const generateRandomHandWithSuits = (accuracy: number = 50): HandData => 
     attempts++;
 
     const isObvious = OBVIOUS_HANDS.strong.includes(notation) ||
-                      OBVIOUS_HANDS.weak.includes(notation) ||
-                      OBVIOUS_HANDS.weak.includes(notation.replace('s', 'o'));
+                      OBVIOUS_HANDS.weak.includes(notation);
 
     if (!isObvious || Math.random() < 0.5 || attempts >= 5) {
       break;

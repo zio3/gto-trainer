@@ -1,5 +1,5 @@
 import { Situation, Action, Position, AnswerLevel, ActionFrequency } from './types';
-import { generateRandomHandWithSuits, OPEN_RANGES, VS_OPEN_RANGES, BORDERLINE_HANDS, OBVIOUS_HANDS, MIXED_STRATEGY } from './gto-ranges';
+import { generateHandForContext, OPEN_RANGES, VS_OPEN_RANGES, BORDERLINE_HANDS, OBVIOUS_HANDS, MIXED_STRATEGY } from './gto-ranges';
 
 export type Locale = 'ja' | 'en';
 
@@ -32,15 +32,16 @@ const getVsOpenDescription = (hero: Position, villain: Position, locale: Locale)
 };
 
 // シチュエーション生成（正解率に応じた難易度調整）
+// シチュエーションを先に決め、そのレンジのボーダーラインハンドを優先的に出題する
 export const generateSituation = (accuracy: number = 50, locale: Locale = 'ja'): Situation => {
   const rand = Math.random();
-  const handData = generateRandomHandWithSuits(accuracy);
 
   if (rand < 0.6) {
     // オープンシチュエーション
     const positions: Position[] = ['UTG', 'HJ', 'CO', 'BTN', 'SB'];
     const position = positions[Math.floor(Math.random() * positions.length)];
     const descriptions = getOpenDescriptions(locale);
+    const handData = generateHandForContext(accuracy, Object.keys(MIXED_STRATEGY.open[position] ?? {}));
 
     return {
       type: 'open',
@@ -74,6 +75,7 @@ export const generateSituation = (accuracy: number = 50, locale: Locale = 'ja'):
       { villain: 'UTG', hero: 'HJ', key: 'HJ_vs_UTG' },
     ];
     const scenario = scenarios[Math.floor(Math.random() * scenarios.length)];
+    const handData = generateHandForContext(accuracy, Object.keys(MIXED_STRATEGY.vsOpen[scenario.key] ?? {}));
     return {
       type: 'vsOpen',
       position: scenario.hero,
@@ -118,9 +120,8 @@ export const getAnswerLevel = (
 
   // 明らかに強いハンド
   const isObviouslyStrong = OBVIOUS_HANDS.strong.includes(hand);
-  // 明らかに弱いハンド
-  const isObviouslyWeak = OBVIOUS_HANDS.weak.includes(hand) ||
-    OBVIOUS_HANDS.weak.includes(hand.replace('s', 'o'));
+  // 明らかに弱いハンド（オフスートのみ。72s等のスーテッドは同一視しない）
+  const isObviouslyWeak = OBVIOUS_HANDS.weak.includes(hand);
 
   // ボーダーラインハンドかどうか
   let isBorderline = false;
@@ -273,8 +274,8 @@ export const getActionFrequency = (situation: Situation): ActionFrequency | null
   return null;
 };
 
-// 上位2つのアクションを取得（Action[]形式）
-export const getTop2Actions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): Action[] => {
+// 頻度データを降順ソートした上位2アクションとして取得
+const getTop2Entries = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): { action: Action; percent: number }[] => {
   const entries: { action: Action; percent: number }[] = [];
 
   if (situationType === 'open') {
@@ -286,27 +287,14 @@ export const getTop2Actions = (frequency: ActionFrequency, situationType: 'open'
     if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
   }
 
-  // 降順でソートして上位2つを取得
   entries.sort((a, b) => b.percent - a.percent);
-  return entries.slice(0, 2).map(e => e.action);
+  return entries.slice(0, 2);
 };
+
+// 上位2つのアクションを取得（Action[]形式）
+export const getTop2Actions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): Action[] =>
+  getTop2Entries(frequency, situationType).map(e => e.action);
 
 // 上位2つのアクションをフォーマット（例: "Raise 60% / Fold 40%"）
-export const formatTopActions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): string => {
-  const entries: { action: string; percent: number }[] = [];
-
-  if (situationType === 'open') {
-    if (frequency.raise !== undefined) entries.push({ action: 'Raise', percent: frequency.raise });
-    if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
-  } else {
-    if (frequency.threebet !== undefined) entries.push({ action: '3-Bet', percent: frequency.threebet });
-    if (frequency.call !== undefined) entries.push({ action: 'Call', percent: frequency.call });
-    if (frequency.fold !== undefined) entries.push({ action: 'Fold', percent: frequency.fold });
-  }
-
-  // 降順でソートして上位2つを取得
-  entries.sort((a, b) => b.percent - a.percent);
-  const top2 = entries.slice(0, 2);
-
-  return top2.map(e => `${e.action} ${e.percent}%`).join(' / ');
-};
+export const formatTopActions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): string =>
+  getTop2Entries(frequency, situationType).map(e => `${e.action} ${e.percent}%`).join(' / ');
