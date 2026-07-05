@@ -3,6 +3,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import HandDisplay from '@/components/HandDisplay';
 import PokerTable from '@/components/PokerTable';
+import FrequencyBars from '@/components/FrequencyBars';
 import { generateSituation, getCorrectAction, getExplanation, getAnswerLevel, getActionFrequency, formatTopActions } from '@/lib/game-logic';
 import { Situation, Result, Stats, AnswerHistoryEntry, ChatMessage, Action, Position, SCORE_WEIGHTS } from '@/lib/types';
 import { OPEN_RANGES, VS_OPEN_RANGES, RANKS } from '@/lib/gto-ranges';
@@ -373,14 +374,17 @@ export default function GTOTrainer() {
   return (
     <main className="min-h-screen bg-gray-900 text-white pb-32">
       <div className="max-w-lg mx-auto p-4">
-        <h1 className="text-2xl font-bold text-center mb-2">{t('app.title')}</h1>
-        <p className="text-gray-400 text-center text-sm mb-6">{t('app.subtitle')}</p>
+        <header className="relative mb-6 pt-3 pb-4 -mx-4 px-4">
+          <div className="solver-grid absolute inset-0 opacity-15 pointer-events-none" aria-hidden="true"></div>
+          <h1 className="relative text-2xl font-bold text-center mb-1">{t('app.title')}</h1>
+          <p className="relative text-blue-400 text-center text-xs font-mono tracking-[0.25em] uppercase">{t('app.subtitle')}</p>
+        </header>
 
         {/* Stats */}
         <div className="bg-gray-800 rounded-lg p-3 mb-6">
           <div className="flex justify-between items-center">
             <span className="text-gray-400">{t('stats.accuracy')}</span>
-            <span className="text-xl font-bold">
+            <span className="text-xl font-bold font-mono tabular-nums">
               {stats.total > 0 ? Math.round((stats.correct / stats.total) * 100) : 0}%
               <span className="text-sm text-gray-400 ml-2">({stats.correct}/{stats.total})</span>
             </span>
@@ -906,6 +910,18 @@ export default function GTOTrainer() {
                     )}
                   </div>
                 </div>
+
+                {/* GTO混合戦略の頻度バー（頻度データがあるハンドのみ） */}
+                {situation && (() => {
+                  const freq = getActionFrequency(situation);
+                  if (!freq) return null;
+                  return (
+                    <div className="bg-black bg-opacity-30 rounded-lg p-3 mb-3">
+                      <div className="text-gray-400 text-[10px] font-mono tracking-[0.2em] mb-2">GTO MIX</div>
+                      <FrequencyBars frequency={freq} situationType={situation.type} />
+                    </div>
+                  );
+                })()}
 
                 <p className="text-gray-300 whitespace-pre-line">{result.explanation}</p>
 

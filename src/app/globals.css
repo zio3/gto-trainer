@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
+/* ソルバー計器盤テーマ:
+   インクネイビーの地 + 等幅数字 + 意味色(赤=Raise/3-Bet, 青=Call, スレート=Fold)。
+   Tailwind のパレットをネイビー寄りに再定義し、既存のユーティリティクラスのまま全体を再着色する。 */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #0e1420;
+  --foreground: #dbe4f2;
+  --grid-line: #3d5a86;
 }
 
 @theme inline {
@@ -12,15 +17,81 @@
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme {
+  /* ネイビーに寄せたグレースケール */
+  --color-gray-900: #0e1420;
+  --color-gray-800: #141c2c;
+  --color-gray-700: #1d2740;
+  --color-gray-600: #2a3a5c;
+  --color-gray-500: #55617a;
+  --color-gray-400: #8fa0be;
+  --color-gray-300: #b9c4da;
+
+  /* 意味色: Raise / 3-Bet */
+  --color-red-500: #d4574e;
+  --color-red-600: #c9463d;
+  --color-red-900: #4a2029;
+  --color-red-950: #33161c;
+
+  /* 意味色: Call */
+  --color-blue-400: #8fb4e8;
+  --color-blue-500: #4e7dd4;
+  --color-blue-600: #3d64b8;
+  --color-blue-900: #1b2b4d;
+
+  /* 正解 / 主要アクション */
+  --color-green-400: #6fd39a;
+  --color-green-600: #2e7d57;
+  --color-green-700: #256647;
+  --color-green-800: #1d5240;
+  --color-green-900: #16382c;
+
+  /* ボーダーライン */
+  --color-yellow-300: #ebcb6b;
+  --color-yellow-700: #98782a;
+  --color-yellow-900: #423618;
+
+  /* AI解説 */
+  --color-amber-400: #e0b159;
+  --color-amber-500: #d19a3f;
+  --color-amber-600: #bb8030;
+  --color-amber-700: #9a6926;
+
+  /* AI分析(計器インディゴ) */
+  --color-purple-400: #99a5e8;
+  --color-purple-500: #6b78cc;
+  --color-purple-600: #4f5eb3;
+  --color-purple-700: #414e99;
+  --color-purple-900: #252b57;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* 13x13 レンジ表を模したグリッドモチーフ(ヘッダー装飾) */
+.solver-grid {
+  background-image:
+    linear-gradient(var(--grid-line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
+  background-size: 13px 13px;
+  mask-image: linear-gradient(#000, transparent);
+  -webkit-mask-image: linear-gradient(#000, transparent);
+}
+
+/* 回答後に頻度バーが伸びる演出 */
+.freq-fill {
+  transform-origin: left;
+  animation: freq-grow 0.7s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes freq-grow {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .freq-fill { animation: none; }
 }

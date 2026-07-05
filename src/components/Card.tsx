@@ -11,7 +11,7 @@ interface CardProps {
 export default function Card({ rank, suit }: CardProps) {
   const suitInfo = SUITS[suit];
   return (
-    <div className="bg-white rounded-lg shadow-lg w-16 h-24 flex flex-col items-center justify-center border-2 border-gray-200">
+    <div className="bg-[#f2f5fa] rounded-lg shadow-lg w-16 h-24 flex flex-col items-center justify-center border border-[#c9d3e4]">
       <span className={`text-2xl font-bold ${suitInfo.color === 'text-gray-800' ? 'text-gray-800' : suitInfo.color}`}>
         {rank}
       </span>

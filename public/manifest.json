@@ -4,8 +4,8 @@
   "description": "ポーカーのGTOプリフロップを練習するためのトレーニングアプリ",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#111827",
-  "theme_color": "#111827",
+  "background_color": "#0e1420",
+  "theme_color": "#0e1420",
   "orientation": "portrait",
   "icons": [
     {

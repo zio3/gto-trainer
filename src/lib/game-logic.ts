@@ -274,8 +274,8 @@ export const getActionFrequency = (situation: Situation): ActionFrequency | null
   return null;
 };
 
-// 頻度データを降順ソートした上位2アクションとして取得
-const getTop2Entries = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): { action: Action; percent: number }[] => {
+// 頻度データを降順ソートしたアクション一覧として取得
+export const getFrequencyEntries = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): { action: Action; percent: number }[] => {
   const entries: { action: Action; percent: number }[] = [];
 
   if (situationType === 'open') {
@@ -288,8 +288,12 @@ const getTop2Entries = (frequency: ActionFrequency, situationType: 'open' | 'vsO
   }
 
   entries.sort((a, b) => b.percent - a.percent);
-  return entries.slice(0, 2);
+  return entries;
 };
+
+// 上位2つのエントリ
+const getTop2Entries = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen') =>
+  getFrequencyEntries(frequency, situationType).slice(0, 2);
 
 // 上位2つのアクションを取得（Action[]形式）
 export const getTop2Actions = (frequency: ActionFrequency, situationType: 'open' | 'vsOpen'): Action[] =>

@@ -23,15 +23,15 @@ export default function PokerTable({ heroPosition, villainPosition }: PokerTable
       <div className="relative w-full" style={{ paddingBottom: '50%' }}>
         {/* テーブル */}
         <div
-          className="absolute inset-4 rounded-full bg-green-800 border-4 border-yellow-700"
+          className="absolute inset-4 rounded-full bg-gray-900 border-2 border-gray-600"
           style={{
-            boxShadow: 'inset 0 0 20px rgba(0,0,0,0.5)',
+            boxShadow: 'inset 0 0 24px rgba(0,0,0,0.6)',
           }}
         />
 
         {/* DEALER ボタン表示 */}
         <div
-          className="absolute text-xs text-gray-400"
+          className="absolute text-[10px] text-gray-500 font-mono tracking-[0.25em]"
           style={{ left: '50%', top: '50%', transform: 'translate(-50%, -50%)' }}
         >
           6-MAX
@@ -59,7 +59,7 @@ export default function PokerTable({ heroPosition, villainPosition }: PokerTable
           return (
             <div
               key={pos.name}
-              className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${bgColor} ${textColor} ${ring} rounded-lg px-2 py-1 text-xs font-bold transition-all`}
+              className={`absolute transform -translate-x-1/2 -translate-y-1/2 ${bgColor} ${textColor} ${ring} rounded-md px-2 py-1 text-xs font-bold font-mono transition-all`}
               style={{ left: `${pos.x}%`, top: `${pos.y}%` }}
             >
               {pos.label}
